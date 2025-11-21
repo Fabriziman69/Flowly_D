@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. PROTECCIÓN: Verificar si es admin
+    // Protección de ruta
     if (localStorage.getItem('flowly_is_admin') !== 'true') {
         alert("Acceso denegado.");
         window.location.href = '/';
@@ -9,13 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarTarjetas();
     cargarAcordeon();
 
-    // Logout
+    // Botón Logout
     document.getElementById('btnSalirAdmin').addEventListener('click', () => {
         localStorage.removeItem('flowly_is_admin');
         window.location.href = '/';
     });
 
-    // --- LOGICA TARJETAS ---
+    // Crear Tarjeta
     document.getElementById('formNuevaTarjeta').addEventListener('submit', async (e) => {
         e.preventDefault();
         const body = {
@@ -24,12 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
             descripcion: document.getElementById('cardDesc').value,
             orden: document.getElementById('cardOrden').value
         };
-        await enviarDatos('/api/info/admin/tarjetas', body);
+        await realizarPeticion('/api/info/admin/tarjetas', 'POST', body);
         cargarTarjetas();
         e.target.reset();
     });
 
-    // --- LOGICA ACORDEON ---
+    // Crear Acordeón
     document.getElementById('formNuevoAcordeon').addEventListener('submit', async (e) => {
         e.preventDefault();
         const body = {
@@ -37,23 +37,56 @@ document.addEventListener('DOMContentLoaded', () => {
             contenido: document.getElementById('accContenido').value,
             orden: document.getElementById('accOrden').value
         };
-        await enviarDatos('/api/info/admin/acordeon', body);
+        await realizarPeticion('/api/info/admin/acordeon', 'POST', body);
         cargarAcordeon();
         e.target.reset();
     });
+
+    // Guardar Edición (UPDATE)
+    document.getElementById('btnGuardarEdicion').addEventListener('click', async () => {
+        const id = document.getElementById('editId').value;
+        const type = document.getElementById('editType').value;
+        
+        const body = {
+            orden: document.getElementById('editOrden').value,
+            titulo: document.getElementById('editTitulo').value
+        };
+
+        // Diferenciar campos según el tipo
+        if (type === 'tarjetas') {
+            body.icono = document.getElementById('editIcono').value;
+            body.descripcion = document.getElementById('editContenido').value;
+        } else {
+            body.contenido = document.getElementById('editContenido').value;
+        }
+
+        await realizarPeticion(`/api/info/admin/${type}/${id}`, 'PUT', body);
+        
+        // Cerrar modal y recargar
+        const modalEl = document.getElementById('modalEditar');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        if (type === 'tarjetas') cargarTarjetas();
+        else cargarAcordeon();
+    });
 });
 
-// --- FUNCIONES HELPER ---
+// --- Funciones Helper ---
 
-async function enviarDatos(url, data) {
+async function realizarPeticion(url, method, data = null) {
     try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error('Error guardando');
-        alert('Guardado correctamente');
+        const options = {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (data) options.body = JSON.stringify(data);
+
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error('Error en la operación');
+        
+        if (method !== 'GET') alert('Operación exitosa');
+        return await res.json();
     } catch (e) {
         alert(e.message);
     }
@@ -61,12 +94,12 @@ async function enviarDatos(url, data) {
 
 async function eliminarItem(tipo, id) {
     if(!confirm("¿Seguro que quieres borrar este elemento?")) return;
-    try {
-        await fetch(`/api/info/admin/${tipo}/${id}`, { method: 'DELETE' });
-        if(tipo === 'tarjetas') cargarTarjetas();
-        else cargarAcordeon();
-    } catch (e) { alert(e.message); }
+    await realizarPeticion(`/api/info/admin/${tipo}/${id}`, 'DELETE');
+    if(tipo === 'tarjetas') cargarTarjetas();
+    else cargarAcordeon();
 }
+
+// --- Funciones de Carga y Renderizado ---
 
 async function cargarTarjetas() {
     const res = await fetch('/api/info/tarjetas');
@@ -75,14 +108,22 @@ async function cargarTarjetas() {
     tbody.innerHTML = '';
     
     data.forEach(item => {
+        // Pasamos los datos al botón de editar como atributos data-
         tbody.innerHTML += `
             <tr>
                 <td>${item.orden}</td>
-                <td><span class="material-symbols-outlined">${item.icono}</span> (${item.icono})</td>
+                <td><span class="material-symbols-outlined">${item.icono}</span></td>
                 <td class="fw-bold">${item.titulo}</td>
                 <td>${item.descripcion}</td>
                 <td class="text-end">
-                    <span class="material-symbols-outlined btn-delete" onclick="eliminarItem('tarjetas', ${item.id})">delete</span>
+                    <span class="material-symbols-outlined btn-action btn-edit" 
+                          onclick="abrirModalEditar('tarjetas', '${item.id}', '${item.titulo}', '${item.descripcion}', '${item.orden}', '${item.icono}')">
+                          edit
+                    </span>
+                    <span class="material-symbols-outlined btn-action btn-delete" 
+                          onclick="eliminarItem('tarjetas', ${item.id})">
+                          delete
+                    </span>
                 </td>
             </tr>
         `;
@@ -96,15 +137,50 @@ async function cargarAcordeon() {
     tbody.innerHTML = '';
     
     data.forEach(item => {
+        // Cortar texto largo para la tabla
+        const contenidoCorto = item.contenido.length > 50 ? item.contenido.substring(0, 50) + '...' : item.contenido;
+        
+        // Pasamos contenido completo (escapado) al editar
+        // Usamos encodeURIComponent para evitar errores con comillas en el texto
+        const contenidoSafe = encodeURIComponent(item.contenido);
+
         tbody.innerHTML += `
             <tr>
                 <td>${item.orden}</td>
                 <td class="fw-bold">${item.titulo}</td>
-                <td>${item.contenido.substring(0, 50)}...</td>
+                <td>${contenidoCorto}</td>
                 <td class="text-end">
-                    <span class="material-symbols-outlined btn-delete" onclick="eliminarItem('acordeon', ${item.id})">delete</span>
+                    <span class="material-symbols-outlined btn-action btn-edit" 
+                          onclick="abrirModalEditar('acordeon', '${item.id}', '${item.titulo}', '${contenidoSafe}', '${item.orden}', null)">
+                          edit
+                    </span>
+                    <span class="material-symbols-outlined btn-action btn-delete" 
+                          onclick="eliminarItem('acordeon', ${item.id})">
+                          delete
+                    </span>
                 </td>
             </tr>
         `;
     });
 }
+
+// Función para abrir el modal y rellenarlo
+window.abrirModalEditar = function(type, id, titulo, contenido, orden, icono) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editType').value = type;
+    document.getElementById('editTitulo').value = titulo;
+    document.getElementById('editOrden').value = orden;
+    
+    // Decodificar contenido si viene de acordeón
+    if (type === 'acordeon') {
+        document.getElementById('editContenido').value = decodeURIComponent(contenido);
+        document.getElementById('divEditIcono').classList.add('d-none'); // Ocultar input icono
+    } else {
+        document.getElementById('editContenido').value = contenido;
+        document.getElementById('editIcono').value = icono;
+        document.getElementById('divEditIcono').classList.remove('d-none'); // Mostrar input icono
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
+    modal.show();
+};

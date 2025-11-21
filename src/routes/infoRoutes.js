@@ -22,7 +22,6 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_KEY, {
 
 // --- Rutas Públicas (Lectura) ---
 
-// Obtener listado de tarjetas informativas
 router.get('/tarjetas', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -37,7 +36,6 @@ router.get('/tarjetas', async (req, res) => {
     }
 });
 
-// Obtener contenido del acordeón
 router.get('/acordeon', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -53,9 +51,11 @@ router.get('/acordeon', async (req, res) => {
 });
 
 
-// --- Rutas Administrativas (Escritura) ---
+// --- Rutas Administrativas (Escritura, Edición, Eliminación) ---
 
-// Crear nueva tarjeta
+// 1. TARJETAS
+
+// Crear
 router.post('/admin/tarjetas', async (req, res) => {
     try {
         const { icono, titulo, descripcion, orden } = req.body;
@@ -70,7 +70,25 @@ router.post('/admin/tarjetas', async (req, res) => {
     }
 });
 
-// Eliminar tarjeta
+// Actualizar (NUEVO)
+router.put('/admin/tarjetas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { icono, titulo, descripcion, orden } = req.body;
+        
+        const { data, error } = await supabaseAdmin
+            .from('info_tarjetas')
+            .update({ icono, titulo, descripcion, orden })
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({ message: "Tarjeta actualizada correctamente" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Eliminar
 router.delete('/admin/tarjetas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -86,7 +104,9 @@ router.delete('/admin/tarjetas/:id', async (req, res) => {
     }
 });
 
-// Crear elemento de acordeón
+// 2. ACORDEÓN
+
+// Crear
 router.post('/admin/acordeon', async (req, res) => {
     try {
         const { titulo, contenido, orden } = req.body;
@@ -101,7 +121,25 @@ router.post('/admin/acordeon', async (req, res) => {
     }
 });
 
-// Eliminar elemento de acordeón
+// Actualizar (NUEVO)
+router.put('/admin/acordeon/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { titulo, contenido, orden } = req.body;
+
+        const { data, error } = await supabaseAdmin
+            .from('info_acordeon')
+            .update({ titulo, contenido, orden })
+            .eq('id', id);
+
+        if (error) throw error;
+        res.json({ message: "Elemento actualizado correctamente" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+// Eliminar
 router.delete('/admin/acordeon/:id', async (req, res) => {
     try {
         const { id } = req.params;
