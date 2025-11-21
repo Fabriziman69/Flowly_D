@@ -106,3 +106,22 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
+        username
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+// Cierre de sesión
+router.post('/logout', async (_req, res) => {
+  try {
+    return res.json({ success: true, message: 'Sesión cerrada correctamente' });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+});
+
+module.exports = router;

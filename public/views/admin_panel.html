@@ -10,7 +10,6 @@
         body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
         .admin-header { background: #343a40; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
         .card-admin { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
-        .table-actions { width: 100px; text-align: right; }
         .btn-delete { color: #dc3545; cursor: pointer; }
         .btn-delete:hover { color: #a71d2a; }
     </style>
@@ -28,12 +27,12 @@
     <div class="container py-5">
         
         <div class="card-admin">
-            <h5 class="mb-4 text-primary border-bottom pb-2">Gestionar Tarjetas (Fases, Síntomas, etc.)</h5>
+            <h5 class="mb-4 text-primary border-bottom pb-2">Gestionar Tarjetas Informativas</h5>
             
             <form id="formNuevaTarjeta" class="row g-3 mb-4 bg-light p-3 rounded">
                 <div class="col-md-2">
                     <input type="text" class="form-control" id="cardIcono" placeholder="Icono (ej: face)" required>
-                    <small class="text-muted"><a href="https://fonts.google.com/icons" target="_blank">Ver iconos</a></small>
+                    <small class="text-muted">Nombre de Material Icons</small>
                 </div>
                 <div class="col-md-3">
                     <input type="text" class="form-control" id="cardTitulo" placeholder="Título" required>
@@ -67,14 +66,14 @@
         </div>
 
         <div class="card-admin">
-            <h5 class="mb-4 text-secondary border-bottom pb-2">Gestionar Acordeón (Detalles Fases)</h5>
+            <h5 class="mb-4 text-secondary border-bottom pb-2">Gestionar Detalles (Acordeón)</h5>
             
             <form id="formNuevoAcordeon" class="row g-3 mb-4 bg-light p-3 rounded">
                 <div class="col-md-3">
-                    <input type="text" class="form-control" id="accTitulo" placeholder="Título (ej: 🩸 Fase Menstrual)" required>
+                    <input type="text" class="form-control" id="accTitulo" placeholder="Título" required>
                 </div>
                 <div class="col-md-7">
-                    <textarea class="form-control" id="accContenido" rows="1" placeholder="Texto descriptivo completo..." required></textarea>
+                    <textarea class="form-control" id="accContenido" rows="1" placeholder="Contenido detallado..." required></textarea>
                 </div>
                 <div class="col-md-1">
                     <input type="number" class="form-control" id="accOrden" placeholder="Orden" value="1">
