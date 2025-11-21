@@ -8,7 +8,7 @@ const path = require('path');
 // ─────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/authRoutes');
 const ciclosRoutes = require('./routes/ciclosRoutes');
-const registroSintomasRoutes = require('./routes/registroSintomasRoutes'); // ✅ ESTA FALTABA
+const registroSintomasRoutes = require('./routes/registroSintomasRoutes');
 const infoRoutes = require('./routes/infoRoutes'); // La nueva de admin
 
 const app = express();
@@ -70,3 +70,4 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+// Servidor listo para Render
