@@ -1,50 +1,71 @@
-// src/routes/ciclosRoutes.js
 const express = require('express');
 const router = express.Router();
-const { supabaseWithToken } = require('../config/supabase');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
-function getAccessToken(req) {
-  const auth = req.headers.authorization || '';
-  return auth.startsWith('Bearer ') ? auth.slice(7) : null;
-}
-
-router.post('/ciclos', async (req, res) => {
+// Crear una nueva configuración de ciclo
+router.post('/', async (req, res) => {
   try {
-    const token = getAccessToken(req);
-    if (!token) return res.status(401).json({ error: 'Falta token' });
+    // Validación de sesión
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
 
-    const supabase = supabaseWithToken(token);
-    const { fecha_inicio, duracion_ciclo, duracion_sangrado = 5 } = req.body;
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    const { data, error } = await supabase
+    if (authError || !user) {
+        return res.status(401).json({ error: 'Sesión inválida o expirada' });
+    }
+
+    // Insertar ciclo en la base de datos
+    const { fecha_inicio, duracion_ciclo, duracion_sangrado } = req.body;
+    const admin = supabaseAdmin();
+
+    const { data, error } = await admin
       .from('ciclos')
-      .insert([{ fecha_inicio, duracion_ciclo, duracion_sangrado }])
+      .insert([
+        { 
+            fecha_inicio, 
+            duracion_ciclo, 
+            duracion_sangrado,
+            fk_usuario: user.id
+        }
+      ])
       .select();
 
-    if (error) return res.status(400).json({ error });
-    res.json({ data });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Server error' });
+    if (error) throw error;
+
+    res.status(201).json({ message: 'Ciclo configurado exitosamente', data });
+  } catch (err) {
+    console.error("Error creando ciclo:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/ciclos', async (req, res) => {
+// Obtener historial de ciclos del usuario
+router.get('/', async (req, res) => {
   try {
-    const token = getAccessToken(req);
-    if (!token) return res.status(401).json({ error: 'Falta token' });
+    // Validación de sesión
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
+    
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    const supabase = supabaseWithToken(token);
-    const { data, error } = await supabase
+    if (authError || !user) return res.status(401).json({ error: 'Sesión inválida' });
+
+    // Consulta de datos filtrada por usuario
+    const admin = supabaseAdmin();
+    const { data, error } = await admin
       .from('ciclos')
       .select('*')
+      .eq('fk_usuario', user.id)
       .order('fecha_inicio', { ascending: false });
 
-    if (error) return res.status(400).json({ error });
-    res.json({ data });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Server error' });
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

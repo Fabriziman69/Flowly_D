@@ -1,33 +1,36 @@
-// src/server.js
 require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
 
-// Importar routers
+// ─────────────────────────────────────────────────────────────
+// 1. IMPORTAR RUTAS (Aquí faltaba la de síntomas)
+// ─────────────────────────────────────────────────────────────
 const authRoutes = require('./routes/authRoutes');
 const ciclosRoutes = require('./routes/ciclosRoutes');
-const registroDiarioRoutes = require('./routes/registroDiarioRoutes');
+const registroSintomasRoutes = require('./routes/registroSintomasRoutes'); // ✅ ESTA FALTABA
+const infoRoutes = require('./routes/infoRoutes'); // La nueva de admin
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─────────────────────────────────────────────────────────────
-// Middlewares globales
+// 2. MIDDLEWARES
 // ─────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ─────────────────────────────────────────────────────────────
-// Montar todas las rutas
+// 3. MONTAR RUTAS API
 // ─────────────────────────────────────────────────────────────
 app.use('/auth', authRoutes);
-app.use('/api', ciclosRoutes);           // ← Incluye /api/ciclos
-app.use('/api', registroDiarioRoutes);   // ← Incluye /api/registro-diario
+app.use('/api/ciclos', ciclosRoutes);
+app.use('/api/registro-sintomas', registroSintomasRoutes); // Ahora sí funcionará
+app.use('/api/info', infoRoutes);
 
 // ─────────────────────────────────────────────────────────────
-// Rutas de vistas
+// 4. RUTAS DE VISTAS (HTML)
 // ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
@@ -37,8 +40,9 @@ app.get('/menu', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/views/menu_inicio.html'));
 });
 
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/views/menu_inicio.html'));
+// Ruta para el panel de administración
+app.get('/admin-panel.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/views/admin_panel.html'));
 });
 
 app.get('/test-server', (req, res) => {
@@ -49,7 +53,7 @@ app.get('/test-server', (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// 404 y manejador de errores
+// 5. MANEJO DE ERRORES (404)
 // ─────────────────────────────────────────────────────────────
 app.use((req, res) => {
   return res.status(404).json({ error: 'Ruta no encontrada' });
@@ -61,7 +65,7 @@ app.use((err, req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// Arranque
+// 6. ARRANQUE
 // ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

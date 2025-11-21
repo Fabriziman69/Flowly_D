@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Flowly</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .admin-header { background: #343a40; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .card-admin { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+        .table-actions { width: 100px; text-align: right; }
+        .btn-delete { color: #dc3545; cursor: pointer; }
+        .btn-delete:hover { color: #a71d2a; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-header">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <h4 class="m-0">Panel Administrador</h4>
+        </div>
+        <button id="btnSalirAdmin" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
+    </div>
+
+    <div class="container py-5">
+        
+        <div class="card-admin">
+            <h5 class="mb-4 text-primary border-bottom pb-2">Gestionar Tarjetas (Fases, Síntomas, etc.)</h5>
+            
+            <form id="formNuevaTarjeta" class="row g-3 mb-4 bg-light p-3 rounded">
+                <div class="col-md-2">
+                    <input type="text" class="form-control" id="cardIcono" placeholder="Icono (ej: face)" required>
+                    <small class="text-muted"><a href="https://fonts.google.com/icons" target="_blank">Ver iconos</a></small>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="cardTitulo" placeholder="Título" required>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" class="form-control" id="cardDesc" placeholder="Descripción corta" required>
+                </div>
+                <div class="col-md-1">
+                    <input type="number" class="form-control" id="cardOrden" placeholder="Orden" value="1">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-success w-100">+</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Orden</th>
+                            <th>Icono</th>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaTarjetas">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-admin">
+            <h5 class="mb-4 text-secondary border-bottom pb-2">Gestionar Acordeón (Detalles Fases)</h5>
+            
+            <form id="formNuevoAcordeon" class="row g-3 mb-4 bg-light p-3 rounded">
+                <div class="col-md-3">
+                    <input type="text" class="form-control" id="accTitulo" placeholder="Título (ej: 🩸 Fase Menstrual)" required>
+                </div>
+                <div class="col-md-7">
+                    <textarea class="form-control" id="accContenido" rows="1" placeholder="Texto descriptivo completo..." required></textarea>
+                </div>
+                <div class="col-md-1">
+                    <input type="number" class="form-control" id="accOrden" placeholder="Orden" value="1">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-success w-100">+</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Orden</th>
+                            <th>Título</th>
+                            <th>Contenido</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaAcordeon">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="../js/script_admin.js"></script>
+</body>
+</html>

@@ -1,9 +1,8 @@
-/* ===== VARIABLES CSS ===== */
+/* ===== VARIABLES DEL NUEVO DISEÑO ===== */
 :root {
-    /* COLORES PRINCIPALES - Puedes cambiar estos valores sin afectar la funcionalidad */
-    --primary-color: #6a11cb;
-    --secondary-color: #2575fc;
-    --accent-color: #ff6b6b;
+    --primary-color: #4f4fde;
+    --secondary-color: #ba809e;
+    --accent-color: #fe2424;
     --text-dark: #333333;
     --text-light: #ffffff;
     --bg-light: #f8f9fa;
@@ -11,308 +10,238 @@
     --transition: all 0.3s ease;
 }
 
-/* ===== ESTILOS GENERALES ===== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* ===== GENERAL ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: #f5f7fa;
+    background: linear-gradient(135deg, #FFB3C6, #C7A4FF);
+    background-attachment: fixed;
     color: var(--text-dark);
 }
 
-/* ===== HEADER Y NAVEGACIÓN ===== */
+/* ===== HEADER ANIMADO ===== */
 header {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    position: sticky; top: 0; z-index: 1000;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     box-shadow: var(--shadow);
-    transition: var(--transition);
     animation: headerSlideDown 0.7s ease;
+    padding-bottom: 5px;
 }
 
-.navbar {
-    padding: 0.5rem 1rem;
-    background: transparent !important;
+.header-particles {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    overflow: hidden; z-index: -1; opacity: 0.3;
 }
 
-.nav-button-container {
-    position: relative;
-    margin: 0 0.5rem;
+.particle {
+    position: absolute; background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%; animation: float 6s infinite ease-in-out;
 }
 
-.nav-button {
+/* ===== BARRA DE NAVEGACIÓN (MÓVIL FIRST) ===== */
+.menu-scroll {
     display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 10px 0;
+    scrollbar-width: none; /* Firefox */
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50px;
-    color: var(--text-light);
-    font-weight: 500;
-    transition: var(--transition);
-    backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
+    width: 100%;
 }
+.menu-scroll::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
 
-.nav-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.nav-button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 5px;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.5);
-    opacity: 0;
-    border-radius: 100%;
-    transform: scale(1, 1) translate(-50%);
-    transform-origin: 50% 50%;
-}
-
-.nav-button:focus:not(:active)::after {
-    animation: ripple 1s ease-out;
-}
-
-@keyframes ripple {
-    0% {
-        transform: scale(0, 0);
-        opacity: 0.5;
-    }
-    100% {
-        transform: scale(20, 20);
-        opacity: 0;
-    }
-}
-
-.nav-button.active {
+/* Estilo Base de los Chips */
+.chip, .nav-button {
     background: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.material-symbols-outlined {
-    font-size: 1.25rem;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    padding: 8px 18px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    flex-shrink: 0; /* Importante para móvil */
+    backdrop-filter: blur(4px);
+    cursor: pointer;
     transition: var(--transition);
 }
 
-.nav-button:hover .material-symbols-outlined {
-    transform: scale(1.1);
+.chip:hover, .nav-button:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
 }
 
-/* ===== MENÚS DESPLEGABLES ===== */
-.dropdown-menu {
-    border: none;
-    border-radius: 12px;
-    padding: 0.5rem;
-    margin-top: 0.5rem !important;
-    animation: dropdownFade 0.3s ease;
-}
-
-@keyframes dropdownFade {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.dropdown-item {
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    margin: 0.15rem 0;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.dropdown-item:hover {
-    background-color: rgba(106, 17, 203, 0.1);
+.chip:active, .chip.active, .nav-button.active {
+    background: #fff;
     color: var(--primary-color);
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-/* ===== CONTENIDO DE LAS SECCIONES ===== */
+/* ===== MEJORA DE RESPONSIVIDAD PARA DESKTOP (LA SOLUCIÓN) ===== */
+@media (min-width: 992px) {
+    .menu-scroll {
+        justify-content: center; /* Centra todo el grupo */
+        overflow-x: visible;     /* Quita scroll */
+        gap: 25px;               /* Más espacio entre botones */
+    }
+
+    .chip, .nav-button {
+        padding: 10px 25px;      /* Botones más grandes */
+        font-size: 1rem;
+        min-width: 140px;        /* Ancho mínimo uniforme */
+    }
+}
+
+/* ===== CONTENIDO SECCIONES ===== */
 .contenido-seccion {
-    padding: 2rem;
     background: white;
-    border-radius: 12px;
+    border-radius: 20px;
+    padding: 2rem;
     box-shadow: var(--shadow);
     margin-top: 1rem;
     animation: fadeInUp 0.5s ease;
 }
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
-/* ===== CALENDARIO MENSTRUAL ===== */
-#calendar {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-}
-
-/* Estilos personalizados para eventos del calendario menstrual */
-.fc-event-menstruacion {
-    background-color: #e91e63 !important;
-    border-color: #e91e63 !important;
-}
-
-.fc-event-fertilidad {
-    background-color: #4caf50 !important;
-    border-color: #4caf50 !important;
-}
-
-.fc-event-sintomas {
-    background-color: #ff9800 !important;
-    border-color: #ff9800 !important;
-}
-
-/* ===== EFECTO DE PARTÍCULAS EN EL HEADER ===== */
-.header-particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: -1;
-}
-
-.particle {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    animation: float 6s infinite ease-in-out;
-}
-
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0) translateX(0);
-    }
-    50% {
-        transform: translateY(-20px) translateX(10px);
-    }
-}
-
 @keyframes headerSlideDown {
-    from {
-        transform: translateY(-100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-20px) translateX(10px); }
 }
 
-/* ===== MODALES PERSONALIZADOS ===== */
-.modal-content {
-    border-radius: 15px;
+/* ===== TARJETAS ESTADÍSTICAS ===== */
+.card {
+    background: #F8F0FF;
+    padding: 20px;
+    border-radius: 20px;
     border: none;
-    box-shadow: var(--shadow);
+    box-shadow: 8px 8px 20px rgba(156, 81, 182, 0.1), -8px -8px 20px rgba(255, 180, 200, 0.3);
+    transition: transform .2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(180, 100, 210, 0.25);
+}
+.title { color: #7B2CBF; font-size: 28px; font-weight: 700; text-align: center; }
+.card-label { color: #EE5D8D; font-size: 16px; font-weight: 600; }
+.card-value { color: #277BC0; font-size: 32px; font-weight: bold; }
+
+/* ===== TARJETAS INFO ===== */
+.shadow-card {
+    border: none; border-radius: 20px; background: #fff;
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
+    transition: all 0.3s ease;
+}
+.shadow-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(233, 30, 99, 0.4);
+}
+.icono-info { font-size: 40px; color: #e91e63; }
+.card-title { font-weight: 600; color: #e91e63; }
+
+/* ===== ACORDEÓN & CONSEJO ===== */
+.accordion-button { background-color: #ffe4ec; color: #c2185b; font-weight: 500; }
+.accordion-button:not(.collapsed) { background-color: #f8bbd0; color: #880e4f; }
+.alert-pink { background-color: #ffe0ec; border: 1px solid #f48fb1; color: #ad1457; border-radius: 12px; }
+
+/* ===== MENSAJE INFERIOR ===== */
+.mensaje-abajo {
+    margin: 10px auto 0; text-align: center;
+    background: #FFE6F8; padding: 15px;
+    border-radius: 18px; font-size: 16px;
+    color: #8a77ec; font-weight: 600;
+    box-shadow: 0 5px 30px rgba(178, 110, 210, 0.3);
+    border: 2px solid #FFB3C6;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.icono { font-size: 24px; }
+
+/* ===== FULLCALENDAR OVERRIDES ===== */
+#calendar { border-radius: 12px; overflow: hidden; background: white; }
+.fc-event-menstruacion { background-color: #e91e63 !important; border-color: #e91e63 !important; }
+.fc-event-fertilidad { background-color: #4caf50 !important; border-color: #4caf50 !important; }
+.fc-event-sintomas { background-color: #ff9800 !important; border-color: #ff9800 !important; }
+
+/* Asegura que el fondo del cuerpo del acordeón tenga contraste */
+.accordion-body {
+    background-color: #fffbfd; /* Un rosa muy pálido casi blanco */
+    color: #555; /* Gris oscuro para el texto */
+    padding: 15px;
 }
 
-.modal-header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: white;
-    border-radius: 15px 15px 0 0;
+/* ===== ESTILO PERSONALIZADO PARA EL SLIDER DE INTENSIDAD ===== */
+
+/* 1. Resetear estilos por defecto del navegador */
+#intensidadSintoma {
+    -webkit-appearance: none; /* Quita el estilo de Chrome/Safari */
+    width: 100%;
+    background: transparent; /* Fondo transparente para poner el nuestro */
+    height: 30px; /* Altura del área clickable */
+    cursor: pointer;
 }
 
-.modal-title {
-    font-weight: 600;
+/* 2. Estilo del CARRIL (La barra gris) */
+#intensidadSintoma::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 12px; /* Más grueso */
+    background: #e0e0e0; /* Gris más oscuro para que se note */
+    border-radius: 10px; /* Bordes redondos */
+    border: 1px solid #d1d1d1; /* Un borde sutil */
+    transition: all 0.3s ease;
 }
 
-/* ===== FORMULARIOS ===== */
-.form-label {
-    font-weight: 500;
-    color: var(--text-dark);
-    margin-bottom: 0.5rem;
+/* 3. Estilo del BOTÓN (El círculo que arrastras) */
+#intensidadSintoma::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 26px; /* Círculo más grande */
+    width: 26px;
+    border-radius: 50%;
+    background: var(--primary-color); /* Usa el color rosa/lila de tu tema */
+    margin-top: -8px; /* Centra el círculo en la barra (mitad de altura - mitad de barra) */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); /* Sombra para que resalte (efecto 3D) */
+    border: 3px solid #ffffff; /* Anillo blanco alrededor */
+    transition: transform 0.2s ease;
 }
 
-.form-control, .form-select {
-    border-radius: 8px;
-    border: 2px solid #e9ecef;
-    transition: var(--transition);
+/* 4. Efecto al pasar el mouse o tocar (Hover/Active) */
+#intensidadSintoma:hover::-webkit-slider-runnable-track {
+    background: #d6d6d6;
 }
 
-.form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
+#intensidadSintoma:active::-webkit-slider-thumb {
+    transform: scale(1.2); /* Se hace un poquito más grande al arrastrar */
+    background: var(--secondary-color); /* Cambia un poco el tono */
 }
 
-.categorias-sintomas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+/* Compatibilidad con Firefox (Por si acaso) */
+#intensidadSintoma::-moz-range-track {
+    width: 100%;
+    height: 12px;
+    background: #e0e0e0;
+    border-radius: 10px;
 }
 
-.form-check-inline {
-    margin-right: 0.5rem;
+#intensidadSintoma::-moz-range-thumb {
+    height: 26px;
+    width: 26px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--primary-color);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
-/* ===== BOTONES ===== */
-.btn-primary {
-    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-    border: none;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: var(--transition);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
-}
-
-/* ===== RESPONSIVIDAD ===== */
-@media (max-width: 992px) {
-    .navbar {
-        padding: 0.5rem;
-    }
-    
-    .nav-button-container {
-        margin: 0.25rem 0;
-    }
-    
-    .nav-button {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .categorias-sintomas {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-}
-
+/* ===== RESPONSIVIDAD EXTRA ===== */
 @media (max-width: 768px) {
-    .navbar-nav {
-        flex-direction: column;
-    }
-    
-    .contenido-seccion {
-        padding: 1rem;
-    }
+    .navbar-collapse { background: transparent; }
+    .chip { padding: 6px 14px; font-size: 0.85rem; }
+    .contenido-seccion { padding: 1.5rem; }
+    .mensaje-abajo { flex-direction: column; }
 }

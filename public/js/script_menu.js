@@ -1,663 +1,443 @@
-// ====== VARIABLES GLOBALES ======
+// Variables globales
 let datosUsuario = {
-  cicloConfigurado: false,
-  ultimoPeriodo: null,
-  duracionCiclo: 28,
-  registrosDiarios: []
+    cicloConfigurado: false,
+    ultimoPeriodo: null,
+    duracionCiclo: 28
 };
 
 let calendar;
-let sintomasSeleccionados = [];
+let listaSintomasCache = [];
 
-// ====== HELPERS DE AUTENTICACIÓN / API ======
-
+// Verificación de tokens y sesión
 function getUserTokenOrThrow() {
-  const token = localStorage.getItem('supabase_token');
-  if (!token) {
-    alert('Debes iniciar sesión.');
-    throw new Error('Falta supabase_token en localStorage');
-  }
-  return token;
+    const token = localStorage.getItem('supabase_token');
+    if (!token) {
+        window.location.href = '/';
+        throw new Error('Sesión no encontrada');
+    }
+    return token;
 }
 
+function getUserIdOrThrow() {
+    const uid = localStorage.getItem('user_id');
+    if (!uid) {
+        window.location.href = '/';
+        throw new Error('ID de usuario no encontrado');
+    }
+    return uid;
+}
+
+// Función genérica para peticiones API
 async function apiFetch(url, options = {}) {
-  const token = getUserTokenOrThrow();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-    'Authorization': `Bearer ${token}`,
-  };
-  const res = await fetch(url, { ...options, headers });
-  let data = null;
-  try {
-    data = await res.json();
-  } catch (_) {
-  }
-  if (!res.ok) {
-    const err = (data && (data.error || data.message)) || `HTTP ${res.status}`;
-    throw new Error(`API error: ${err}`);
-  }
-  return data;
+    const token = getUserTokenOrThrow();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        'Authorization': `Bearer ${token}`,
+    };
+    const res = await fetch(url, { ...options, headers });
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok) throw new Error((data && (data.error || data.message)) || `Error HTTP ${res.status}`);
+    return data;
 }
 
-// ====== VERIFICACIÓN DE SESIÓN ======
-function verificarSesion() {
-  const userId = localStorage.getItem('user_id');
-  const userToken = localStorage.getItem('supabase_token');
-  if (!userId || !userToken) {
-    window.location.href = '/';
-    return false;
-  }
-  return true;
-}
-
-// ====== INICIALIZACIÓN DE LA APLICACIÓN ======
+// Inicialización
 document.addEventListener('DOMContentLoaded', function () {
-  if (!verificarSesion()) return;
+    if (!verificarSesion()) return;
 
-  inicializarAplicacion();
-  cargarDatosUsuarioPerfil();
+    inicializarAplicacion();
+    mostrarConsejoDelDia();
 
-  const btnLogout = document.getElementById('btnLogout');
-  if (btnLogout) {
-    btnLogout.addEventListener('click', function (e) {
-      e.preventDefault();
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('user_email');
-      localStorage.removeItem('user_name');
-      localStorage.removeItem('supabase_token');
-      localStorage.removeItem('datosUsuarioMenstrual');
-      window.location.href = '/';
-    });
-  }
+    const logoutFn = (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = '/';
+    };
+    
+    const btn1 = document.getElementById('btnLogout');
+    const btn2 = document.getElementById('btnLogoutMobile');
+    if(btn1) btn1.addEventListener('click', logoutFn);
+    if(btn2) btn2.addEventListener('click', logoutFn);
 });
 
+function verificarSesion() {
+    const token = localStorage.getItem('supabase_token');
+    if (!token) {
+        window.location.href = '/';
+        return false;
+    }
+    return true;
+}
+
+// Carga de datos y configuración de UI
 async function inicializarAplicacion() {
-  cargarDatosUsuario();
-  inicializarCalendario();
-  configurarNavegacion();
-  crearParticulas();
-  configurarEventosRegistro();
-  configurarEventosSintomas();
-  actualizarInterfaz();
+    cargarDatosPerfil();
+    inicializarCalendario();
+    configurarNavegacion();
+    crearParticulas();
+    configurarEventosBotones();
 
-  await cargarCiclosDesdeBackend();
-}
-
-// ====== DATOS DEL USUARIO EN EL PERFIL ======
-function cargarDatosUsuarioPerfil() {
-  const username = localStorage.getItem('user_name') || 'Usuario';
-  const email = localStorage.getItem('user_email') || 'correo@ejemplo.com';
-
-  const usernameEl = document.getElementById('perfil-username');
-  const emailEl = document.getElementById('perfil-email');
-
-  if (usernameEl) usernameEl.textContent = username;
-  if (emailEl) emailEl.textContent = email;
-}
-
-// ====== GESTIÓN DE DATOS DEL USUARIO (LOCAL STORAGE) ======
-function cargarDatosUsuario() {
-  const datosGuardados = localStorage.getItem('datosUsuarioMenstrual');
-  if (datosGuardados) {
     try {
-      datosUsuario = JSON.parse(datosGuardados);
-    } catch {
-      datosUsuario = {
-        cicloConfigurado: false,
-        ultimoPeriodo: null,
-        duracionCiclo: 28,
-        registrosDiarios: []
-      };
+        await Promise.all([
+            cargarCatalogoSintomas(),
+            cargarCiclosDesdeBackend(),
+            cargarInfoDinamica()
+        ]);
+    } catch (e) {
+        // Manejo de errores de carga
     }
-  }
 }
 
-function guardarDatosUsuario() {
-  localStorage.setItem('datosUsuarioMenstrual', JSON.stringify(datosUsuario));
+function cargarDatosPerfil() {
+    const email = localStorage.getItem('user_email') || 'Usuario';
+    const uEl = document.getElementById('perfil-username');
+    const eEl = document.getElementById('perfil-email');
+    const navEl = document.getElementById('nav-username');
+    
+    if(eEl) eEl.textContent = email;
+    if(uEl) uEl.textContent = 'Bienvenida';
+    if(navEl) navEl.textContent = 'Cuenta';
 }
 
-// ====== CALENDARIO ======
+// Gestión de Ciclos
+async function cargarCiclosDesdeBackend() {
+    try {
+        const res = await apiFetch('/api/ciclos');
+        const ciclos = Array.isArray(res) ? res : (res.data || []);
+        
+        if (ciclos.length > 0) {
+            const ult = ciclos[0]; 
+            datosUsuario.cicloConfigurado = true;
+            datosUsuario.ultimoPeriodo = ult.fecha_inicio;
+            datosUsuario.duracionCiclo = ult.duracion_ciclo;
+            
+            actualizarEstadisticas();
+            if(calendar) calendar.refetchEvents();
+        } else {
+            datosUsuario.cicloConfigurado = false;
+            const modalEl = document.getElementById('modalRegistroInicial');
+            if(modalEl) new bootstrap.Modal(modalEl).show();
+        }
+    } catch (error) {
+        // Error al cargar ciclos
+    }
+}
+
+async function guardarCicloInicial() {
+    const fecha = document.getElementById('ultimoPeriodo').value;
+    const duracion = parseInt(document.getElementById('duracionCiclo').value);
+    const btn = document.getElementById('btnGuardarRegistroInicial');
+
+    if (!fecha || !duracion) return alert("Completa los datos requeridos.");
+
+    try {
+        btn.textContent = "Guardando..."; btn.disabled = true;
+        
+        await apiFetch('/api/ciclos', {
+            method: 'POST',
+            body: JSON.stringify({ fecha_inicio: fecha, duracion_ciclo: duracion, duracion_sangrado: 5 })
+        });
+        
+        datosUsuario.cicloConfigurado = true;
+        datosUsuario.ultimoPeriodo = fecha;
+        datosUsuario.duracionCiclo = duracion;
+        
+        alert("Ciclo configurado correctamente.");
+        
+        bootstrap.Modal.getInstance(document.getElementById('modalRegistroInicial')).hide();
+        calendar.refetchEvents();
+        actualizarEstadisticas();
+        
+        const regBtn = document.getElementById('registro-texto');
+        if(regBtn) regBtn.textContent = "Registrar";
+
+    } catch (e) { 
+        alert('Error: ' + e.message); 
+    } finally { 
+        btn.textContent = "Guardar"; btn.disabled = false; 
+    }
+}
+
+// Calendario
 function inicializarCalendario() {
-  const calendarEl = document.getElementById('calendar');
-  if (!calendarEl) return;
+    const el = document.getElementById('calendar');
+    if (!el) return;
 
-  calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    locale: 'es',
-    firstDay: 1,
-    events: generarEventosCalendario(),
-    eventContent: function (info) {
-      const element = document.createElement('div');
-      element.className = 'fc-event-main-frame';
-      element.innerHTML = `
-        <div class="fc-event-title-container">
-          <div class="fc-event-title fc-sticky">${info.event.title}</div>
-        </div>
-      `;
-      return { domNodes: [element] };
-    },
-    dateClick: function (info) {
-      abrirRegistroDiario(info.dateStr);
-    }
-  });
-
-  calendar.render();
+    calendar = new FullCalendar.Calendar(el, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        firstDay: 1,
+        headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' },
+        height: 'auto', 
+        events: async function(info, cb, fail) {
+            try {
+                let evs = [];
+                // Predicciones
+                if (datosUsuario.cicloConfigurado && datosUsuario.ultimoPeriodo) {
+                    evs = evs.concat(generarPrediccionesMatematicas());
+                }
+                // Historial
+                const dbRegs = await apiFetch('/api/registro-sintomas/mis-registros');
+                if (dbRegs && Array.isArray(dbRegs)) {
+                    evs = evs.concat(dbRegs.map(reg => ({
+                        title: reg.fk_sintomas ? reg.fk_sintomas.nombre_sintoma : 'Síntoma',
+                        start: reg.fecha,
+                        color: '#ff9800',
+                        allDay: true
+                    })));
+                }
+                cb(evs);
+            } catch (e) { fail(e); }
+        },
+        dateClick: function (info) { abrirModalSintoma(info.dateStr); }
+    });
+    calendar.render();
 }
 
-function generarEventosCalendario() {
-  const eventos = [];
-
-  if (datosUsuario.cicloConfigurado && datosUsuario.ultimoPeriodo) {
-    const ultimoPeriodo = new Date(datosUsuario.ultimoPeriodo);
-    const duracionCiclo = datosUsuario.duracionCiclo;
+function generarPrediccionesMatematicas() {
+    const ev = [];
+    const ult = new Date(datosUsuario.ultimoPeriodo);
+    const dur = datosUsuario.duracionCiclo;
 
     for (let i = 0; i < 6; i++) {
-      const inicioPeriodo = new Date(ultimoPeriodo);
-      inicioPeriodo.setDate(inicioPeriodo.getDate() + (i * duracionCiclo));
-
-      for (let j = 0; j < 5; j++) {
-        const fechaMenstruacion = new Date(inicioPeriodo);
-        fechaMenstruacion.setDate(fechaMenstruacion.getDate() + j);
-
-        eventos.push({
-          title: 'Periodo esperado',
-          start: fechaMenstruacion.toISOString().split('T')[0],
-          color: '#e91e63',
-          classNames: ['fc-event-menstruacion']
-        });
-      }
-
-      const inicioFertilidad = new Date(inicioPeriodo);
-      inicioFertilidad.setDate(inicioFertilidad.getDate() + 10);
-
-      const finFertilidad = new Date(inicioPeriodo);
-      finFertilidad.setDate(finFertilidad.getDate() + 17);
-
-      eventos.push({
-        title: 'Ventana fértil',
-        start: inicioFertilidad.toISOString().split('T')[0],
-        end: finFertilidad.toISOString().split('T')[0],
-        color: '#4caf50',
-        classNames: ['fc-event-fertilidad']
-      });
-
-      const ovulacion = new Date(inicioPeriodo);
-      ovulacion.setDate(ovulacion.getDate() + 14);
-
-      eventos.push({
-        title: 'Ovulación',
-        start: ovulacion.toISOString().split('T')[0],
-        color: '#ff9800',
-        classNames: ['fc-event-ovulacion']
-      });
+        const ini = new Date(ult); ini.setDate(ini.getDate() + (i * dur));
+        
+        // Periodo
+        for (let j = 0; j < 5; j++) { 
+            const d = new Date(ini); d.setDate(d.getDate() + j);
+            ev.push({ start: d.toISOString().split('T')[0], display: 'background', color: '#e91e63' });
+        }
+        // Ovulación
+        const ovu = new Date(ini); ovu.setDate(ovu.getDate() + 14); 
+        ev.push({ title: 'Ovulación', start: ovu.toISOString().split('T')[0], color: '#ff9800' });
+        
+        // Fértil
+        const f1 = new Date(ini); f1.setDate(f1.getDate() + 10);
+        const f2 = new Date(ini); f2.setDate(f2.getDate() + 15);
+        ev.push({ start: f1.toISOString().split('T')[0], end: f2.toISOString().split('T')[0], display: 'background', color: '#4caf50', opacity: 0.3 });
     }
-  }
-
-  datosUsuario.registrosDiarios.forEach(registro => {
-    eventos.push({
-      title: 'Registro diario',
-      start: registro.fecha,
-      color: '#2196f3',
-      classNames: ['fc-event-sintomas']
-    });
-  });
-
-  return eventos;
+    return ev;
 }
 
-// ====== NAVEGACIÓN ======
-function configurarNavegacion() {
-  const secciones = {
-    'btn_calendario': 'seccion-calendario',
-    'btn_estadisticas': 'seccion-estadisticas',
-    'btn_informativa': 'seccion-informativa'
-  };
-
-  Object.values(secciones).forEach(seccionId => {
-    const seccion = document.getElementById(seccionId);
-    if (seccion) seccion.classList.add('d-none');
-  });
-
-  const seccionCalendario = document.getElementById('seccion-calendario');
-  const btnCalendario = document.getElementById('btn_calendario');
-
-  if (seccionCalendario && btnCalendario) {
-    seccionCalendario.classList.remove('d-none');
-    btnCalendario.classList.add('active');
-  }
-
-  Object.keys(secciones).forEach(botonId => {
-    const boton = document.getElementById(botonId);
-    if (boton) {
-      boton.addEventListener('click', function () {
-        cambiarSeccion(botonId, secciones);
-      });
-    }
-  });
-}
-
-function cambiarSeccion(botonId, secciones) {
-  Object.values(secciones).forEach(seccionId => {
-    const seccion = document.getElementById(seccionId);
-    if (seccion) seccion.classList.add('d-none');
-  });
-
-  Object.keys(secciones).forEach(btnId => {
-    const boton = document.getElementById(btnId);
-    if (boton) boton.classList.remove('active');
-  });
-
-  const seccionId = secciones[botonId];
-  const seccion = document.getElementById(seccionId);
-  const boton = document.getElementById(botonId);
-
-  if (seccion && boton) {
-    seccion.classList.remove('d-none');
-    boton.classList.add('active');
-
-    if (botonId === 'btn_estadisticas') {
-      actualizarEstadisticasReales();
-    }
-  }
-}
-
-// ====== CONFIGURACIÓN DE EVENTOS PARA SÍNTOMAS ======
-function configurarEventosSintomas() {
-  const btnAgregarSintoma = document.getElementById('btnAgregarSintoma');
-  if (btnAgregarSintoma) {
-    btnAgregarSintoma.addEventListener('click', agregarSintomaDesdeFormulario);
-  }
-
-  const sintomasRapidos = document.querySelectorAll('.sintoma-rapido');
-  sintomasRapidos.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const nombre = this.getAttribute('data-nombre');
-      const categoria = this.getAttribute('data-categoria');
-      agregarSintomaALista(nombre, categoria, 'Moderado');
-    });
-  });
-}
-
-// ====== GESTIÓN DE SÍNTOMAS DINÁMICOS ======
-function agregarSintomaDesdeFormulario() {
-  const nombre = document.getElementById('nuevoSintomaNombre').value.trim();
-  const categoria = document.getElementById('nuevoSintomaCategoria').value;
-  const intensidad = document.getElementById('nuevoSintomaIntensidad').value;
-
-  if (!nombre) {
-    alert('Por favor ingresa un nombre para el síntoma');
-    return;
-  }
-
-  agregarSintomaALista(nombre, categoria, intensidad);
-  document.getElementById('nuevoSintomaNombre').value = '';
-}
-
-function agregarSintomaALista(nombre, categoria, intensidad) {
-  const sintoma = {
-    nombre_sintoma: nombre,
-    categoria: categoria,
-    intensidad: intensidad,
-    id: Date.now()
-  };
-
-  sintomasSeleccionados.push(sintoma);
-  actualizarListaSintomasUI();
-}
-
-function eliminarSintoma(id) {
-  sintomasSeleccionados = sintomasSeleccionados.filter(s => s.id !== id);
-  actualizarListaSintomasUI();
-}
-
-function actualizarListaSintomasUI() {
-  const contenedor = document.querySelector('.sintomas-container');
-  if (!contenedor) return;
-
-  contenedor.innerHTML = '';
-
-  if (sintomasSeleccionados.length === 0) {
-    contenedor.innerHTML = '<p class="text-muted">No hay síntomas agregados</p>';
-    return;
-  }
-
-  sintomasSeleccionados.forEach(sintoma => {
-    const sintomaEl = document.createElement('div');
-    sintomaEl.className = 'alert alert-sm alert-light d-flex justify-content-between align-items-center';
-    sintomaEl.innerHTML = `
-      <div>
-        <strong>${sintoma.nombre_sintoma}</strong> 
-        <span class="badge bg-secondary">${sintoma.categoria}</span>
-        <span class="badge bg-info">${sintoma.intensidad}</span>
-      </div>
-      <button type="button" class="btn btn-sm btn-outline-danger" data-id="${sintoma.id}">
-        <span class="material-symbols-outlined" style="font-size: 1rem;">delete</span>
-      </button>
-    `;
-
-    const btnEliminar = sintomaEl.querySelector('button');
-    btnEliminar.addEventListener('click', function() {
-      eliminarSintoma(sintoma.id);
-    });
-
-    contenedor.appendChild(sintomaEl);
-  });
-}
-
-function limpiarSintomas() {
-  sintomasSeleccionados = [];
-  actualizarListaSintomasUI();
-}
-
-// ====== REGISTRO MENSTRUAL ======
-function configurarEventosRegistro() {
-  const btnRegistro = document.getElementById('btn_registro');
-  const btnGuardarRegistroInicial = document.getElementById('btnGuardarRegistroInicial');
-  const btnGuardarRegistroDiario = document.getElementById('btnGuardarRegistroDiario');
-
-  if (btnRegistro) {
-    btnRegistro.addEventListener('click', function () {
-      if (!datosUsuario.cicloConfigurado) {
-        const modalRegistroInicial = new bootstrap.Modal(document.getElementById('modalRegistroInicial'));
-        modalRegistroInicial.show();
-      } else {
-        abrirRegistroDiario();
-      }
-    });
-  }
-
-  if (btnGuardarRegistroInicial) {
-    btnGuardarRegistroInicial.addEventListener('click', guardarRegistroInicial);
-  }
-
-  if (btnGuardarRegistroDiario) {
-    btnGuardarRegistroDiario.addEventListener('click', guardarRegistroDiario);
-  }
-}
-
-// ====== GUARDAR CICLO INICIAL EN BACKEND (RLS) ======
-async function guardarRegistroInicial() {
-  const ultimoPeriodo = document.getElementById('ultimoPeriodo')?.value;
-  const duracionCiclo = parseInt(document.getElementById('duracionCiclo')?.value, 10);
-
-  if (!ultimoPeriodo || !duracionCiclo) {
-    alert('Por favor, completa todos los campos requeridos.');
-    return;
-  }
-
-  try {
-    const payload = await apiFetch('/api/ciclos', {
-      method: 'POST',
-      body: JSON.stringify({
-        fecha_inicio: ultimoPeriodo,
-        duracion_ciclo: duracionCiclo,
-        duracion_sangrado: 5
-      })
-    });
-
-    datosUsuario.cicloConfigurado = true;
-    datosUsuario.ultimoPeriodo = ultimoPeriodo;
-    datosUsuario.duracionCiclo = duracionCiclo;
-    guardarDatosUsuario();
-    actualizarInterfaz();
-
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistroInicial'));
-    modal?.hide();
-
-    alert('Configuración guardada exitosamente en la base de datos!');
-    await cargarCiclosDesdeBackend();
-  } catch (error) {
-    console.error('Error guardando ciclo:', error);
-    alert('Error de conexión. Los datos se guardaron localmente.');
-
-    datosUsuario.cicloConfigurado = true;
-    datosUsuario.ultimoPeriodo = ultimoPeriodo;
-    datosUsuario.duracionCiclo = duracionCiclo;
-    guardarDatosUsuario();
-    actualizarInterfaz();
-
-    const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistroInicial'));
-    modal?.hide();
-  }
-}
-
-// ====== CARGAR CICLOS DESDE BACKEND (RLS) ======
-async function cargarCiclosDesdeBackend() {
-  try {
-    const payload = await apiFetch('/api/ciclos', {
-      method: 'GET'
-    });
-
-    const ciclos = payload?.data || [];
-    if (ciclos.length > 0) {
-      const cicloMasReciente = ciclos[0];
-
-      datosUsuario.cicloConfigurado = true;
-      datosUsuario.ultimoPeriodo = cicloMasReciente.fecha_inicio;
-      datosUsuario.duracionCiclo = cicloMasReciente.duracion_ciclo;
-
-      guardarDatosUsuario();
-      actualizarInterfaz();
-
-      const seccionEst = document.getElementById('seccion-estadisticas');
-      if (seccionEst && !seccionEst.classList.contains('d-none')) {
-        actualizarEstadisticasReales(ciclos);
-      }
-    }
-  } catch (error) {
-    console.error('Error cargando ciclos:', error);
-  }
-}
-
-// ====== REGISTRO DIARIO ======
-async function abrirRegistroDiario(fechaEspecifica = null) {
-  const fecha = fechaEspecifica || new Date().toISOString().split('T')[0];
-  
-  const fechaActualEl = document.getElementById('fechaActual');
-  const fechaDiariaEl = document.getElementById('fechaDiaria');
-  
-  if (fechaActualEl) {
-    fechaActualEl.textContent = formatearFecha(fecha);
-  }
-  if (fechaDiariaEl) {
-    fechaDiariaEl.value = fecha;
-  }
-
-  document.getElementById('formRegistroDiario')?.reset();
-  limpiarSintomas();
-
-  await precargarRegistroExistente(fecha);
-  
-  const modal = new bootstrap.Modal(document.getElementById('modalRegistroDiario'));
-  modal.show();
-}
-
-async function precargarRegistroExistente(fecha) {
-  try {
-    const payload = await apiFetch(`/api/registro-diario?fecha=${encodeURIComponent(fecha)}`);
-    const registros = payload?.data || [];
-    
-    if (registros.length > 0) {
-      const registro = registros[0];
-      
-      document.getElementById('temperatura_basal').value = registro.temperatura_basal || '';
-      document.getElementById('flujo_cervical').value = registro.flujo_cervical || '';
-      document.getElementById('nota_extra').value = registro.nota_extra || '';
-      
-      if (registro.sintomas && Array.isArray(registro.sintomas)) {
-        registro.sintomas.forEach(sintoma => {
-          if (sintoma.sintomas) {
-            agregarSintomaALista(
-              sintoma.sintomas.nombre_sintoma,
-              sintoma.sintomas.categoria,
-              sintoma.intensidad
-            );
-          }
-        });
-      }
-    }
-  } catch (error) {
-    console.warn('No se encontró registro para la fecha:', fecha, error);
-  }
-}
-
-async function guardarRegistroDiario() {
-  const fecha = document.getElementById('fechaDiaria').value;
-  const temperatura_basal = document.getElementById('temperatura_basal').value;
-  const flujo_cervical = document.getElementById('flujo_cervical').value;
-  const nota_extra = document.getElementById('nota_extra').value;
-
-  const sintomasPayload = sintomasSeleccionados.map(sintoma => ({
-    nombre_sintoma: sintoma.nombre_sintoma,
-    categoria: sintoma.categoria,
-    intensidad: sintoma.intensidad
-  }));
-
-  const body = {
-    fecha: fecha,
-    temperatura_basal: temperatura_basal ? parseFloat(temperatura_basal) : null,
-    flujo_cervical: flujo_cervical ? parseInt(flujo_cervical) : null,
-    nota_extra: nota_extra || null,
-    sintomas: sintomasPayload
-  };
-
-  try {
-    const resp = await apiFetch('/api/registro-diario', {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-
-    if (resp.success) {
-      const nuevoRegistro = {
-        fecha: fecha,
-        temperatura_basal: body.temperatura_basal,
-        flujo_cervical: body.flujo_cervical,
-        nota_extra: body.nota_extra,
-        sintomas: sintomasSeleccionados
-      };
-
-      const index = datosUsuario.registrosDiarios.findIndex(r => r.fecha === fecha);
-      if (index !== -1) {
-        datosUsuario.registrosDiarios[index] = nuevoRegistro;
-      } else {
-        datosUsuario.registrosDiarios.push(nuevoRegistro);
-      }
-
-      guardarDatosUsuario();
-
-      const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistroDiario'));
-      modal?.hide();
-
-      alert('Registro diario guardado exitosamente');
-      actualizarInterfaz();
-    } else {
-      alert('Error al guardar: ' + (resp.error || 'Desconocido'));
-    }
-  } catch (error) {
-    console.error('Error guardando registro diario:', error);
-    alert('No se pudo guardar. Revisa tu conexión: ' + error.message);
-  }
-}
-
-// ====== UI ======
-function actualizarInterfaz() {
-  const textoRegistro = document.getElementById('registro-texto');
-  if (textoRegistro) {
-    textoRegistro.textContent = datosUsuario.cicloConfigurado ? 'Registro Diario' : 'Registro';
-  }
-
-  if (calendar) {
-    calendar.removeAllEvents();
-    calendar.addEventSource(generarEventosCalendario());
-  }
-}
-
-// ====== ESTADÍSTICAS ======
-function actualizarEstadisticas() {
-  if (!datosUsuario.cicloConfigurado) {
-    document.getElementById('duracion-promedio').textContent = '-- días';
-    document.getElementById('ciclo-actual').textContent = 'Día --';
-    document.getElementById('proximo-periodo').textContent = '-- días';
-    return;
-  }
-
-  const ultimoPeriodo = new Date(datosUsuario.ultimoPeriodo);
-  const hoy = new Date();
-  const diffTiempo = hoy.getTime() - ultimoPeriodo.getTime();
-  const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
-  const diaCicloActual = (diffDias % datosUsuario.duracionCiclo) + 1;
-  const diasHastaProximoPeriodo = datosUsuario.duracionCiclo - (diffDias % datosUsuario.duracionCiclo);
-
-  document.getElementById('duracion-promedio').textContent = `${datosUsuario.duracionCiclo} días`;
-  document.getElementById('ciclo-actual').textContent = `Día ${diaCicloActual}`;
-  document.getElementById('proximo-periodo').textContent = `${diasHastaProximoPeriodo} días`;
-}
-
-async function actualizarEstadisticasReales(ciclosExternos = null) {
-  let ciclos = ciclosExternos;
-
-  if (!ciclos) {
+// Gestión de Síntomas
+async function cargarCatalogoSintomas() {
     try {
-      const payload = await apiFetch('/api/ciclos', { method: 'GET' });
-      ciclos = payload?.data || null;
-    } catch (error) {
-      console.error('Error cargando ciclos para estadísticas:', error);
-      ciclos = null;
-    }
-  }
-
-  if (!ciclos || ciclos.length === 0) {
-    actualizarEstadisticas();
-    return;
-  }
-
-  const duraciones = ciclos.map(c => c.duracion_ciclo);
-  const promedio = Math.round(duraciones.reduce((a, b) => a + b, 0) / duraciones.length);
-
-  const cicloMasReciente = ciclos[0];
-  const ultimoPeriodo = new Date(cicloMasReciente.fecha_inicio);
-  const hoy = new Date();
-
-  const diffTiempo = hoy.getTime() - ultimoPeriodo.getTime();
-  const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
-
-  const diaCicloActual = (diffDias % cicloMasReciente.duracion_ciclo) + 1;
-  const diasHastaProximoPeriodo = cicloMasReciente.duracion_ciclo - (diffDias % cicloMasReciente.duracion_ciclo);
-
-  document.getElementById('duracion-promedio').textContent = `${promedio} días (${ciclos.length} ciclos)`;
-  document.getElementById('ciclo-actual').textContent = `Día ${diaCicloActual}`;
-  document.getElementById('proximo-periodo').textContent = `${diasHastaProximoPeriodo} días`;
+        const datos = await apiFetch('/api/registro-sintomas/lista-sintomas');
+        listaSintomasCache = datos;
+        const sel = document.getElementById('selectSintoma');
+        if (sel) {
+            sel.innerHTML = '<option value="" selected disabled>Selecciona...</option>';
+            datos.forEach(s => sel.innerHTML += `<option value="${s.id_sintomas}">${s.nombre_sintoma}</option>`);
+        }
+    } catch (e) { }
 }
 
-// ====== UTILITARIAS ======
-function formatearFecha(fechaISO) {
-  const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(fechaISO).toLocaleDateString('es-ES', opciones);
+function abrirModalSintoma(fecha) {
+    document.getElementById('fechaSintoma').value = fecha;
+    const sel = document.getElementById('selectSintoma');
+    const chk = document.getElementById('checkOtroSintoma');
+    
+    sel.value = ""; sel.disabled = false; chk.checked = false;
+    document.getElementById('divNuevoSintoma').classList.add('d-none');
+    document.getElementById('inputNuevoSintoma').value = "";
+    document.getElementById('intensidadSintoma').value = 2;
+
+    new bootstrap.Modal(document.getElementById('modalSintoma')).show();
+}
+
+async function guardarSintoma() {
+    const btn = document.getElementById('btnGuardarSintoma');
+    const fecha = document.getElementById('fechaSintoma').value;
+    const inten = document.getElementById('intensidadSintoma').value;
+    const esNuevo = document.getElementById('checkOtroSintoma').checked;
+    const inpNew = document.getElementById('inputNuevoSintoma');
+    const sel = document.getElementById('selectSintoma');
+
+    let body = { fk_usuario: getUserIdOrThrow(), fecha, intensidad: inten, fk_ciclo: null };
+
+    if (esNuevo) {
+        const txt = inpNew.value.trim();
+        if (!txt) return alert("Por favor escribe el síntoma.");
+        body.nuevo_sintoma = txt; body.fk_sintomas = null;
+    } else {
+        const id = sel.value;
+        if (!id) return alert("Por favor selecciona un síntoma.");
+        body.fk_sintomas = id; body.nuevo_sintoma = null;
+    }
+
+    try {
+        btn.textContent = "Guardando..."; btn.disabled = true;
+        await apiFetch('/api/registro-sintomas', { method: 'POST', body: JSON.stringify(body) });
+        
+        alert('Síntoma registrado correctamente.');
+        
+        if (esNuevo) await cargarCatalogoSintomas();
+        
+        const tit = esNuevo ? body.nuevo_sintoma : sel.options[sel.selectedIndex].text;
+        if(calendar) calendar.addEvent({ title: tit, start: fecha, color: '#ff9800', allDay: true });
+        
+        bootstrap.Modal.getInstance(document.getElementById('modalSintoma')).hide();
+    } catch (e) { 
+        alert('Error: ' + e.message); 
+    } finally { 
+        btn.textContent = "Guardar"; btn.disabled = false; 
+    }
+}
+
+// Carga dinámica de contenido
+async function cargarInfoDinamica() {
+    try {
+        const resTarjetas = await fetch('/api/info/tarjetas');
+        const tarjetas = await resTarjetas.json();
+        renderizarTarjetas(tarjetas);
+
+        const resAcordeon = await fetch('/api/info/acordeon');
+        const acordeon = await resAcordeon.json();
+        renderizarAcordeon(acordeon);
+    } catch (error) { }
+}
+
+function renderizarTarjetas(data) {
+    const cont = document.getElementById('contenedor-tarjetas-info');
+    if(!cont) return;
+    cont.innerHTML = '';
+    if(data.length === 0) {
+        cont.innerHTML = '<p class="text-center text-muted">Sin información disponible.</p>';
+        return;
+    }
+    data.forEach(item => {
+        cont.innerHTML += `
+            <div class="col-md-4 mb-3">
+                <div class="shadow-card p-3 text-center h-100">
+                    <span class="material-symbols-outlined icono-info">${item.icono}</span>
+                    <h6 class="card-title mt-2">${item.titulo}</h6>
+                    <p class="small text-muted">${item.descripcion}</p>
+                </div>
+            </div>`;
+    });
+}
+
+function renderizarAcordeon(data) {
+    const cont = document.getElementById('acordeonFases');
+    if(!cont) return;
+    cont.innerHTML = '';
+    data.forEach((item, idx) => {
+        const show = idx === 0 ? 'show' : '';
+        const collapsed = idx === 0 ? '' : 'collapsed';
+        cont.innerHTML += `
+            <div class="accordion-item border-0">
+                <h2 class="accordion-header">
+                    <button class="accordion-button ${collapsed} fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#item-${item.id}">
+                        ${item.titulo}
+                    </button>
+                </h2>
+                <div id="item-${item.id}" class="accordion-collapse collapse ${show}" data-bs-parent="#acordeonFases">
+                    <div class="accordion-body text-muted small" style="background-color: #fffbfd;">
+                        ${item.contenido}
+                    </div>
+                </div>
+            </div>`;
+    });
+}
+
+// Configuración de eventos UI
+function configurarEventosBotones() {
+    document.getElementById('btnGuardarRegistroInicial')?.addEventListener('click', guardarCicloInicial);
+    document.getElementById('btnGuardarSintoma')?.addEventListener('click', guardarSintoma);
+
+    const chk = document.getElementById('checkOtroSintoma');
+    if(chk) {
+        chk.addEventListener('change', function() {
+            document.getElementById('divNuevoSintoma').classList.toggle('d-none', !this.checked);
+            document.getElementById('selectSintoma').disabled = this.checked;
+            if(this.checked) document.getElementById('selectSintoma').value = "";
+        });
+    }
+
+    const btnCiclo = document.getElementById('btn_ciclo');
+    if (btnCiclo) {
+        btnCiclo.addEventListener('click', () => {
+            if (datosUsuario.cicloConfigurado) {
+                new bootstrap.Modal(document.getElementById('modalCicloExistente')).show();
+            } else {
+                document.getElementById('ultimoPeriodo').value = new Date().toISOString().split('T')[0];
+                new bootstrap.Modal(document.getElementById('modalRegistroInicial')).show();
+            }
+        });
+    }
+
+    const btnNuevoCiclo = document.getElementById('btnIniciarNuevoCiclo');
+    if (btnNuevoCiclo) {
+        btnNuevoCiclo.addEventListener('click', () => {
+            bootstrap.Modal.getInstance(document.getElementById('modalCicloExistente')).hide();
+            document.getElementById('ultimoPeriodo').value = new Date().toISOString().split('T')[0];
+            const dur = datosUsuario.duracionCiclo || 28;
+            document.getElementById('duracionCiclo').value = dur;
+            new bootstrap.Modal(document.getElementById('modalRegistroInicial')).show();
+        });
+    }
+
+    const btnSintoma = document.getElementById('btn_registro');
+    if (btnSintoma) {
+        btnSintoma.addEventListener('click', () => {
+            abrirModalSintoma(new Date().toISOString().split('T')[0]);
+        });
+    }
+}
+
+function configurarNavegacion() {
+    const map = { 'btn_calendario': 'seccion-calendario', 'btn_estadisticas': 'seccion-estadisticas', 'btn_informativa': 'seccion-informativa' };
+    Object.keys(map).forEach(key => {
+        const btn = document.getElementById(key);
+        if(!btn) return;
+        btn.addEventListener('click', function() {
+            Object.keys(map).forEach(k => {
+                document.getElementById(map[k])?.classList.add('d-none');
+                document.getElementById(k)?.classList.remove('active');
+            });
+            document.getElementById(map[key])?.classList.remove('d-none');
+            this.classList.add('active');
+            
+            if (key === 'btn_estadisticas') actualizarEstadisticas();
+            if (key === 'btn_calendario' && calendar) setTimeout(() => calendar.render(), 100);
+        });
+    });
+}
+
+function actualizarEstadisticas() {
+    if (!datosUsuario.cicloConfigurado) return;
+    const ult = new Date(datosUsuario.ultimoPeriodo);
+    const hoy = new Date();
+    const dur = datosUsuario.duracionCiclo;
+    const diff = Math.ceil(Math.abs(hoy - ult) / (1000 * 60 * 60 * 24));
+    
+    document.getElementById('duracion-promedio').textContent = dur + " días";
+    document.getElementById('ciclo-actual').textContent = "Día " + ((diff % dur) || dur);
+    document.getElementById('proximo-periodo').textContent = (dur - ((diff % dur) || dur)) + " días";
+}
+
+function mostrarConsejoDelDia() {
+    const consejos = [
+        "Bebe suficiente agua.", 
+        "Haz respiraciones profundas.", 
+        "El té de jengibre ayuda con la inflamación.", 
+        "Prioriza dormir bien.", 
+        "Evita el exceso de cafeína.", 
+        "Consume alimentos ricos en hierro."
+    ];
+    const div = document.getElementById("consejo-diario");
+    if(div) div.textContent = "Consejo: " + consejos[Math.floor(Math.random() * consejos.length)];
 }
 
 function crearParticulas() {
-  const particlesContainer = document.getElementById('headerParticles');
-  if (!particlesContainer) return;
-
-  const particleCount = 15;
-  for (let i = 0; i < particleCount; i++) {
-    const particle = document.createElement('div');
-    particle.classList.add('particle');
-
-    const size = Math.random() * 5 + 3;
-    particle.style.width = `${size}px`;
-    particle.style.height = `${size}px`;
-    particle.style.left = `${Math.random() * 100}%`;
-    particle.style.top = `${Math.random() * 100}%`;
-    particle.style.animationDelay = `${Math.random() * 5}s`;
-
-    particlesContainer.appendChild(particle);
-  }
+    const c = document.getElementById('headerParticles');
+    if (!c) return;
+    for(let i=0; i<10; i++){
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random()*100 + '%';
+        p.style.animationDelay = Math.random()*5 + 's';
+        c.appendChild(p);
+    }
 }
-

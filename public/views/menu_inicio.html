@@ -4,396 +4,256 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Calendario Menstrual</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts Material Symbols -->
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-    <!-- Google Fonts para tipografía -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FullCalendar CSS -->
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
-
-    <link rel="icon" href="../IMG/icon.ico" type="image/x-icon">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="../css/style_menu.css">
 </head>
 <body>
-    <!-- HEADER CON NAVEGACIÓN ANIMADA -->
     <header>
-        <!-- Efecto de partículas en el fondo -->
         <div class="header-particles" id="headerParticles"></div>
-        
-        <nav class="navbar navbar-expand-lg navbar-light">
-            <div class="container-fluid">
-                <!-- Botón para menú en móviles -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
-                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+        <nav class="navbar navbar-expand-lg navbar-light p-0 pt-2">
+            <div class="container-fluid flex-column align-items-start align-items-lg-center">
                 
-                <!-- Contenido colapsable para móviles -->
-                <div class="collapse navbar-collapse" id="navbarContent">
-                    <div class="navbar-nav w-100 justify-content-between align-items-center">
-                        <!-- Botón de usuario con dropdown -->
-                        <div class="nav-button-container dropdown">
-                            <button type="button" class="nav-button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="d-lg-none w-100 px-3 mb-1">
+                    <span class="text-white fw-bold fs-5">Mi Ciclo</span>
+                </div>
+
+                <div class="w-100">
+                    <div class="menu-scroll w-100 d-flex gap-2 py-2 px-2">
+                        
+                        <div class="dropdown nav-item-custom">
+                            <button class="chip nav-button dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <span class="material-symbols-outlined">account_circle</span>
-                                Usuario
+                                <span id="nav-username">Usuario</span>
                             </button>
-                            <ul class="dropdown-menu shadow w-100">
-                                <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="offcanvas" data-bs-target="#offcanvasPerfil">
-                                        <span class="material-symbols-outlined">person</span>
-                                        Perfil de usuario
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="offcanvas" data-bs-target="#offcanvasGuia">
-                                        <span class="material-symbols-outlined">help</span>
-                                        Guia de uso
-                                    </a>
-                                </li>
+                            <ul class="dropdown-menu shadow border-0 mt-2">
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="offcanvas" data-bs-target="#offcanvasPerfil">
+                                    <span class="material-symbols-outlined me-2">person</span> Perfil
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" id="btnLogoutMobile">
+                                    <span class="material-symbols-outlined me-2">logout</span> Salir
+                                </a></li>
                             </ul>
                         </div>
 
-                        <!-- Botón de registro menstrual -->
-                        <div class="nav-button-container">
-                            <button type="button" class="nav-button" id="btn_registro">
-                                <span class="material-symbols-outlined">event_note</span>
-                                <span id="registro-texto">Registro</span>
-                            </button>
-                        </div>
+                        <button type="button" class="chip nav-button nav-item-custom" id="btn_ciclo">
+                            <span class="material-symbols-outlined">settings_accessibility</span>
+                            Ciclo
+                        </button>
 
-                        <!-- Botón de calendario -->
-                        <div class="nav-button-container">
-                            <button type="button" class="nav-button" id="btn_calendario">
-                                <span class="material-symbols-outlined">calendar_month</span>
-                                Calendario
-                            </button>
-                        </div>
+                        <button type="button" class="chip nav-button nav-item-custom" id="btn_registro">
+                            <span class="material-symbols-outlined">edit_calendar</span>
+                            Síntomas
+                        </button>
 
-                        <!-- Botón de estadísticas -->
-                        <div class="nav-button-container">
-                            <button type="button" class="nav-button" id="btn_estadisticas">
-                                <span class="material-symbols-outlined">bar_chart</span>
-                                Estadisticas
-                            </button>
-                        </div>
+                        <button type="button" class="chip nav-button active nav-item-custom" id="btn_calendario">
+                            <span class="material-symbols-outlined">calendar_month</span>
+                            Calendario
+                        </button>
 
-                        <!-- Botón de sección informativa -->
-                        <div class="nav-button-container">
-                            <button type="button" class="nav-button" id="btn_informativa">
-                                <span class="material-symbols-outlined">book</span>
-                                Seccion Informativa
-                            </button>
-                        </div>
+                        <button type="button" class="chip nav-button nav-item-custom" id="btn_estadisticas">
+                            <span class="material-symbols-outlined">bar_chart</span>
+                            Estadísticas
+                        </button>
+
+                        <button type="button" class="chip nav-button nav-item-custom" id="btn_informativa">
+                            <span class="material-symbols-outlined">local_library</span>
+                            Info Salud
+                        </button>
+
                     </div>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="container pt-4">
-        <!-- Sección de Calendario -->
-        <div id="seccion-calendario" class="contenido-seccion" aria-live="polite" aria-atomic="true">
-            <h2 class="mb-4">Calendario Menstrual</h2>
-            <div id='calendar'></div>
+    <main class="container pt-4 pb-5">
+        
+        <div id="seccion-calendario" class="contenido-seccion fade-in">
+            <h2 class="title mb-4 text-center">Calendario Menstrual</h2>
+            <div id='calendar' class="shadow-sm rounded bg-white p-2"></div>
         </div>
 
-        <!-- Sección de Estadísticas -->
-        <div id="seccion-estadisticas" class="contenido-seccion d-none" aria-live="polite" aria-atomic="true">
-            <h2 class="mb-4">Estadísticas de tu Ciclo</h2>
-            <div class="row">
+        <div id="seccion-estadisticas" class="contenido-seccion d-none fade-in">
+            <h2 class="title mb-4">Estadísticas de tu Ciclo</h2>
+            <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="card mb-3">
+                    <div class="card h-100 border-0">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Duración Promedio</h5>
-                            <p class="card-text display-6 text-primary" id="duracion-promedio">-- días</p>
+                            <span class="material-symbols-outlined text-primary mb-2" style="font-size: 2rem;">timelapse</span>
+                            <h5 class="card-label">Duración Promedio</h5>
+                            <p class="card-value" id="duracion-promedio">-- días</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card mb-3">
+                    <div class="card h-100 border-0">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Ciclo Actual</h5>
-                            <p class="card-text display-6 text-success" id="ciclo-actual">Día --</p>
+                            <span class="material-symbols-outlined text-success mb-2" style="font-size: 2rem;">today</span>
+                            <h5 class="card-label">Ciclo Actual</h5>
+                            <p class="card-value text-success" id="ciclo-actual">Día --</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card mb-3">
+                    <div class="card h-100 border-0">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Próximo Periodo</h5>
-                            <p class="card-text display-6 text-info" id="proximo-periodo">-- días</p>
+                            <span class="material-symbols-outlined text-danger mb-2" style="font-size: 2rem;">event_busy</span>
+                            <h5 class="card-label">Próximo Periodo</h5>
+                            <p class="card-value text-danger" id="proximo-periodo">-- días</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Sección Informativa -->
-        <div id="seccion-informativa" class="contenido-seccion d-none" aria-live="polite" aria-atomic="true">
-            <h2 class="mb-4">Información sobre Salud Menstrual</h2>
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Fases del Ciclo Menstrual</h5>
-                            <p class="card-text">Tu ciclo menstrual tiene cuatro fases principales: menstrual, folicular, ovulatoria y lútea.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Síntomas Comunes</h5>
-                            <p class="card-text">Es normal experimentar cambios físicos y emocionales durante las diferentes fases de tu ciclo.</p>
-                        </div>
-                    </div>
+            
+            <div class="mensaje-abajo mt-5">
+                <span class="material-symbols-outlined" style="font-size: 24px; color: var(--primary-color);">spa</span>
+                <div class="text-start">
+                    <p class="mb-1 fw-bold">IMPORTANCIA DEL REGISTRO</p>
+                    <p class="mb-0 small">Llevar un registro te ayuda a comprender tu cuerpo, identificar patrones y detectar irregularidades a tiempo.</p>
                 </div>
             </div>
+        </div>
+
+        <div id="seccion-informativa" class="contenido-seccion d-none fade-in">
+            <h2 class="title mb-4">Salud Menstrual</h2>
+
+            <div id="consejo-diario" class="alert alert-pink text-center fs-6 fw-semibold shadow-sm border-0 mb-4">
+                Cargando consejo...
+            </div>
+
+            <div id="contenedor-tarjetas-info" class="row mb-4">
+                <div class="col-12 text-center text-muted">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p>Cargando información...</p>
+                </div>
+            </div>
+
+            <div class="accordion shadow-sm rounded overflow-hidden" id="acordeonFases">
+                </div>
         </div>
     </main>
 
-    <!-- FORMULARIO FLOTANTE PARA REGISTRO INICIAL -->
-    <div class="modal fade" id="modalRegistroInicial" tabindex="-1" aria-labelledby="modalRegistroInicialLabel" aria-hidden="true">
+    <div class="modal fade" id="modalRegistroInicial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalRegistroInicialLabel">Configuración Inicial de tu Ciclo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background: var(--primary-color);">
+                    <h5 class="modal-title">Configuración de Ciclo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form id="formRegistroInicial">
                         <div class="mb-3">
-                            <label for="ultimoPeriodo" class="form-label">¡Bienvenida! Para empezar, ¿cuándo fue el primer día de tu último periodo?</label>
+                            <label for="ultimoPeriodo" class="form-label">Primer día del último periodo:</label>
                             <input type="date" class="form-control" id="ultimoPeriodo" required>
                         </div>
                         <div class="mb-3">
-                            <label for="duracionCiclo" class="form-label">Normalmente, ¿cuántos días pasan desde que te baja un mes hasta el siguiente?</label>
+                            <label for="duracionCiclo" class="form-label">Duración del ciclo (días):</label>
                             <input type="number" class="form-control" id="duracionCiclo" min="21" max="35" value="28" required>
-                            <div class="form-text">El ciclo promedio es de 28 días, pero puede variar entre 21 y 35 días.</div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardarRegistroInicial">Guardar Configuración</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-primary w-100 rounded-pill" id="btnGuardarRegistroInicial">Guardar Ciclo</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- FORMULARIO FLOTANTE PARA REGISTRO DIARIO -->
-    <div class="modal fade" id="modalRegistroDiario" tabindex="-1" aria-labelledby="modalRegistroDiarioLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalRegistroDiarioLabel">Registro Diario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="modalCicloExistente" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title text-primary fw-bold">Estado del Ciclo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="formRegistroDiario">
+                <div class="modal-body text-center p-4">
+                    <span class="material-symbols-outlined text-primary mb-3" style="font-size: 40px;">event_repeat</span>
+                    
+                    <h4 class="fw-bold text-dark mb-2">Ciclo Activo</h4>
+                    <p class="text-muted mb-4">Actualmente estamos siguiendo tu ciclo anterior.</p>
+
+                    <hr class="my-4">
+
+                    <h6 class="fw-bold text-secondary mb-3">¿Comenzó tu periodo nuevamente?</h6>
+                    <p class="small text-muted mb-3">Registra el inicio para recalcular tus fechas.</p>
+                    
+                    <button type="button" class="btn btn-primary w-100 rounded-pill py-2" id="btnIniciarNuevoCiclo">
+                        <span class="material-symbols-outlined align-middle me-2" style="font-size: 18px;">water_drop</span>
+                        Registrar Nuevo Periodo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalSintoma" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background: linear-gradient(to right, var(--primary-color), var(--secondary-color));">
+                    <h5 class="modal-title">Registrar Síntoma</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="formSintoma">
                         <div class="mb-3">
-                            <label class="form-label">Registro para el día:</label>
-                            <p class="fw-bold" id="fechaActual"></p>
-                            <input type="hidden" id="fechaDiaria">
+                            <label for="fechaSintoma" class="form-label fw-bold text-secondary">Fecha:</label>
+                            <input type="date" class="form-control bg-light" id="fechaSintoma" required>
                         </div>
 
-                        <!-- Temperatura Basal -->
                         <div class="mb-3">
-                            <label for="temperatura_basal" class="form-label">Temperatura basal (°C):</label>
-                            <input type="number" class="form-control" id="temperatura_basal" step="0.01" min="35" max="38" 
-                                   placeholder="Ej: 36.52">
-                            <div class="form-text">Temperatura al despertar, antes de cualquier actividad.</div>
-                        </div>
-
-                        <!-- Flujo Cervical -->
-                        <div class="mb-3">
-                            <label for="flujo_cervical" class="form-label">Flujo cervical:</label>
-                            <select class="form-select" id="flujo_cervical">
-                                <option value="">Selecciona el tipo de flujo</option>
-                                <option value="0">Seco</option>
-                                <option value="1">Pegajoso</option>
-                                <option value="2">Cremoso</option>
-                                <option value="3">Acuoso</option>
-                                <option value="4">Elástico (clara de huevo)</option>
+                            <label for="selectSintoma" class="form-label fw-bold text-secondary">¿Qué sientes hoy?</label>
+                            <select class="form-select" id="selectSintoma">
+                                <option value="" selected disabled>Cargando síntomas...</option>
                             </select>
                         </div>
 
-                        <!-- Síntomas Dinámicos -->
-                        <div class="mb-3">
-                            <label class="form-label">Síntomas:</label>
-                            <div class="sintomas-container mb-3">
-                                <!-- Los síntomas se agregarán dinámicamente aquí -->
-                            </div>
-                            
-                            <!-- Controles para agregar nuevos síntomas -->
-                            <div class="card">
-                                <div class="card-body">
-                                    <h6 class="card-title">Agregar síntoma</h6>
-                                    <div class="row g-2">
-                                        <div class="col-md-5">
-                                            <input type="text" class="form-control" id="nuevoSintomaNombre" 
-                                                   placeholder="Nombre del síntoma (ej: dolor cabeza)">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select class="form-select" id="nuevoSintomaCategoria">
-                                                <option value="Físico">Físico</option>
-                                                <option value="Emocional">Emocional</option>
-                                                <option value="Digestivo">Digestivo</option>
-                                                <option value="Piel">Piel</option>
-                                                <option value="Otro">Otro</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <select class="form-select" id="nuevoSintomaIntensidad">
-                                                <option value="Leve">Leve</option>
-                                                <option value="Moderado">Moderado</option>
-                                                <option value="Fuerte">Fuerte</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btnAgregarSintoma">
-                                        <span class="material-symbols-outlined" style="font-size: 1rem;">add</span>
-                                        Agregar Síntoma
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Síntomas Comunes Rápidos -->
-                            <div class="mt-3">
-                                <label class="form-label">Síntomas comunes:</label>
-                                <div class="d-flex flex-wrap gap-2" id="sintomasRapidos">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Cólicos" data-categoria="Físico">
-                                        Cólicos
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Dolor de cabeza" data-categoria="Físico">
-                                        Dolor cabeza
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Fatiga" data-categoria="Físico">
-                                        Fatiga
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Irritabilidad" data-categoria="Emocional">
-                                        Irritabilidad
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Ansiedad" data-categoria="Emocional">
-                                        Ansiedad
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Sensibilidad mamaria" data-categoria="Físico">
-                                        Senos sensibles
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Acné" data-categoria="Piel">
-                                        Acné
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary sintoma-rapido" 
-                                            data-nombre="Hinchazón abdominal" data-categoria="Digestivo">
-                                        Hinchazón
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="checkOtroSintoma">
+                            <label class="form-check-label text-muted small" for="checkOtroSintoma">No encuentro mi síntoma</label>
                         </div>
 
-                        <!-- Notas Adicionales -->
-                        <div class="mb-3">
-                            <label for="nota_extra" class="form-label">Notas adicionales:</label>
-                            <textarea class="form-control" id="nota_extra" rows="3" 
-                                      placeholder="Observaciones, medicamentos, actividades, etc."></textarea>
+                        <div class="mb-4 d-none" id="divNuevoSintoma">
+                            <input type="text" class="form-control border-primary" id="inputNuevoSintoma" placeholder="Escribe aquí (ej: Mareos)">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold text-secondary">Intensidad</label>
+                            <input type="range" class="form-range" min="1" max="5" id="intensidadSintoma" value="2">
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Leve</span>
+                                <span>Fuerte</span>
+                            </div>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardarRegistroDiario">Guardar Registro</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary px-4 rounded-pill" id="btnGuardarSintoma">Guardar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- OFF-CANVAS ELEMENTOS -->
-    <!-- Off-canvas Perfil de Usuario -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasPerfil" aria-labelledby="offcanvasPerfilLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasPerfilLabel">Perfil de Usuario</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasPerfil">
+        <div class="offcanvas-header bg-light">
+            <h5 class="offcanvas-title">Mi Perfil</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
-        <div class="offcanvas-body">
-            <div class="text-center mb-4">
-                <span class="material-symbols-outlined" style="font-size: 4rem; color: var(--primary-color);">
-                    account_circle
-                </span>
-                <!-- Aquí se llenan dinámicamente con JS -->
-                <h4 class="mt-2" id="perfil-username">Usuario</h4>
-                <p class="text-muted" id="perfil-email">correo@ejemplo.com</p>
-            </div>
-            <div class="list-group">
-                <a href="#" id="btnLogout" class="list-group-item list-group-item-action d-flex align-items-center text-danger">
-                    <span class="material-symbols-outlined me-2">logout</span>
-                    Cerrar sesión
-                </a>
-            </div>
+        <div class="offcanvas-body text-center pt-5">
+            <span class="material-symbols-outlined text-secondary mb-3" style="font-size: 4rem;">account_circle</span>
+            <h4 id="perfil-username">Usuario</h4>
+            <p class="text-muted mb-4" id="perfil-email">...</p>
+            <hr>
+            <a href="#" id="btnLogout" class="btn btn-outline-danger w-100 rounded-pill mt-3">Cerrar Sesión</a>
         </div>
     </div>
 
-    <!-- Off-canvas Guía de Uso -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasGuia" aria-labelledby="offcanvasGuiaLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasGuiaLabel">Guía de Uso</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <h6>Bienvenida a tu Calendario Menstrual</h6>
-            <p>Esta guía te ayudará a utilizar todas las funciones disponibles:</p>
-            <ul>
-                <li><strong>Registro:</strong> Configura tu ciclo inicial y lleva un registro diario de tus síntomas.</li>
-                <li><strong>Calendario:</strong> Visualiza tu ciclo menstrual y los días de registro.</li>
-                <li><strong>Estadísticas:</strong> Analiza patrones en tu ciclo menstrual.</li>
-                <li><strong>Sección informativa:</strong> Encuentra información sobre salud menstrual.</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Off-canvas Redes Sociales -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasRedes" aria-labelledby="offcanvasRedesLabel">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasRedesLabel">Redes Sociales</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body">
-            <p>Síguenos en nuestras redes sociales para estar al tanto de las actualizaciones:</p>
-            <div class="d-grid gap-2">
-                <button class="btn btn-primary d-flex align-items-center justify-content-center">
-                    <span class="material-symbols-outlined me-2">facebook</span>
-                    Facebook
-                </button>
-                <button class="btn btn-info text-white d-flex align-items-center justify-content-center">
-                    <span class="material-symbols-outlined me-2">twitter</span>
-                    Twitter
-                </button>
-                <button class="btn btn-danger d-flex align-items-center justify-content-center">
-                    <span class="material-symbols-outlined me-2">instagram</span>
-                    Instagram
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- FullCalendar JS -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js'></script>
-
-    <!--supabase-->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Custom JS -->
     <script src="../js/script_menu.js"></script>
 </body>
 </html>
