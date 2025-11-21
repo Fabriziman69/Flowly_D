@@ -12,6 +12,9 @@
         .card-admin { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
         .btn-delete { color: #dc3545; cursor: pointer; }
         .btn-delete:hover { color: #a71d2a; }
+        /* Estilo para el link de iconos */
+        .icon-link { text-decoration: none; color: #6a11cb; font-weight: 600; font-size: 0.85rem; }
+        .icon-link:hover { text-decoration: underline; color: #2575fc; }
     </style>
 </head>
 <body>
@@ -32,7 +35,10 @@
             <form id="formNuevaTarjeta" class="row g-3 mb-4 bg-light p-3 rounded">
                 <div class="col-md-2">
                     <input type="text" class="form-control" id="cardIcono" placeholder="Icono (ej: face)" required>
-                    <small class="text-muted">Nombre de Material Icons</small>
+                    <a href="https://fonts.google.com/icons" target="_blank" class="icon-link">
+                        <span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">open_in_new</span> 
+                        Ver iconos
+                    </a>
                 </div>
                 <div class="col-md-3">
                     <input type="text" class="form-control" id="cardTitulo" placeholder="Título" required>
