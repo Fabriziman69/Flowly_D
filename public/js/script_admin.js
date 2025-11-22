@@ -1,186 +1,194 @@
+// Archivo: js/script_admin.js
+const API_URL = '/api/admin'; // Base url
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Protección de ruta
-    if (localStorage.getItem('flowly_is_admin') !== 'true') {
-        alert("Acceso denegado.");
-        window.location.href = '/';
-        return;
-    }
+    cargarTodo();
 
-    cargarTarjetas();
-    cargarAcordeon();
+    // Listeners para Formularios de Crear
+    configurarForm('formTarjetas', 'tarjetas');
+    configurarForm('formAcordeon', 'acordeon');
+    configurarForm('formUsuarios', 'users');
 
-    // Botón Logout
-    document.getElementById('btnSalirAdmin').addEventListener('click', () => {
-        localStorage.removeItem('flowly_is_admin');
-        window.location.href = '/';
-    });
-
-    // Crear Tarjeta
-    document.getElementById('formNuevaTarjeta').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const body = {
-            icono: document.getElementById('cardIcono').value,
-            titulo: document.getElementById('cardTitulo').value,
-            descripcion: document.getElementById('cardDesc').value,
-            orden: document.getElementById('cardOrden').value
-        };
-        await realizarPeticion('/api/info/admin/tarjetas', 'POST', body);
-        cargarTarjetas();
-        e.target.reset();
-    });
-
-    // Crear Acordeón
-    document.getElementById('formNuevoAcordeon').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const body = {
-            titulo: document.getElementById('accTitulo').value,
-            contenido: document.getElementById('accContenido').value,
-            orden: document.getElementById('accOrden').value
-        };
-        await realizarPeticion('/api/info/admin/acordeon', 'POST', body);
-        cargarAcordeon();
-        e.target.reset();
-    });
-
-    // Guardar Edición (UPDATE)
-    document.getElementById('btnGuardarEdicion').addEventListener('click', async () => {
-        const id = document.getElementById('editId').value;
-        const type = document.getElementById('editType').value;
-        
-        const body = {
-            orden: document.getElementById('editOrden').value,
-            titulo: document.getElementById('editTitulo').value
-        };
-
-        // Diferenciar campos según el tipo
-        if (type === 'tarjetas') {
-            body.icono = document.getElementById('editIcono').value;
-            body.descripcion = document.getElementById('editContenido').value;
-        } else {
-            body.contenido = document.getElementById('editContenido').value;
-        }
-
-        await realizarPeticion(`/api/info/admin/${type}/${id}`, 'PUT', body);
-        
-        // Cerrar modal y recargar
-        const modalEl = document.getElementById('modalEditar');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-
-        if (type === 'tarjetas') cargarTarjetas();
-        else cargarAcordeon();
-    });
+    // Listener para Botón Guardar Edición
+    document.getElementById('btnGuardarCambios').addEventListener('click', guardarEdicion);
 });
 
-// --- Funciones Helper ---
+// --- FUNCIONES DE CARGA ---
+async function cargarTodo() {
+    cargarTabla('tarjetas', renderFilaTarjeta);
+    cargarTabla('acordeon', renderFilaAcordeon);
+    cargarTabla('users', renderFilaUsuario);
+}
 
-async function realizarPeticion(url, method, data = null) {
+async function cargarTabla(endpoint, renderFunction) {
     try {
-        const options = {
-            method: method,
-            headers: { 'Content-Type': 'application/json' }
-        };
-        if (data) options.body = JSON.stringify(data);
-
-        const res = await fetch(url, options);
-        if (!res.ok) throw new Error('Error en la operación');
-        
-        if (method !== 'GET') alert('Operación exitosa');
-        return await res.json();
-    } catch (e) {
-        alert(e.message);
+        const res = await fetch(`${API_URL}/${endpoint}`);
+        const data = await res.json();
+        const tbody = document.querySelector(`#tabla${capitalize(endpoint === 'users' ? 'Usuarios' : endpoint)}`);
+        tbody.innerHTML = '';
+        data.forEach(item => {
+            tbody.innerHTML += renderFunction(item);
+        });
+    } catch (error) {
+        console.error("Error cargando " + endpoint, error);
     }
 }
 
-async function eliminarItem(tipo, id) {
-    if(!confirm("¿Seguro que quieres borrar este elemento?")) return;
-    await realizarPeticion(`/api/info/admin/${tipo}/${id}`, 'DELETE');
-    if(tipo === 'tarjetas') cargarTarjetas();
-    else cargarAcordeon();
+// --- RENDERIZADO (HTML DE LAS TABLAS) ---
+function renderFilaTarjeta(i) {
+    return `<tr>
+        <td>${i.orden}</td>
+        <td><span class="material-symbols-outlined">${i.icono}</span></td>
+        <td>${i.titulo}</td>
+        <td>${i.descripcion}</td>
+        <td>${btnAcciones(i.id, 'tarjetas', JSON.stringify(i).replace(/"/g, '&quot;'))}</td>
+    </tr>`;
 }
 
-// --- Funciones de Carga y Renderizado ---
-
-async function cargarTarjetas() {
-    const res = await fetch('/api/info/tarjetas');
-    const data = await res.json();
-    const tbody = document.getElementById('tablaTarjetas');
-    tbody.innerHTML = '';
-    
-    data.forEach(item => {
-        // Pasamos los datos al botón de editar como atributos data-
-        tbody.innerHTML += `
-            <tr>
-                <td>${item.orden}</td>
-                <td><span class="material-symbols-outlined">${item.icono}</span></td>
-                <td class="fw-bold">${item.titulo}</td>
-                <td>${item.descripcion}</td>
-                <td class="text-end">
-                    <span class="material-symbols-outlined btn-action btn-edit" 
-                          onclick="abrirModalEditar('tarjetas', '${item.id}', '${item.titulo}', '${item.descripcion}', '${item.orden}', '${item.icono}')">
-                          edit
-                    </span>
-                    <span class="material-symbols-outlined btn-action btn-delete" 
-                          onclick="eliminarItem('tarjetas', ${item.id})">
-                          delete
-                    </span>
-                </td>
-            </tr>
-        `;
-    });
+function renderFilaAcordeon(i) {
+    return `<tr>
+        <td>${i.orden}</td>
+        <td>${i.titulo}</td>
+        <td>${i.contenido.substring(0,30)}...</td>
+        <td>${btnAcciones(i.id, 'acordeon', JSON.stringify(i).replace(/"/g, '&quot;'))}</td>
+    </tr>`;
 }
 
-async function cargarAcordeon() {
-    const res = await fetch('/api/info/acordeon');
-    const data = await res.json();
-    const tbody = document.getElementById('tablaAcordeon');
-    tbody.innerHTML = '';
-    
-    data.forEach(item => {
-        // Cortar texto largo para la tabla
-        const contenidoCorto = item.contenido.length > 50 ? item.contenido.substring(0, 50) + '...' : item.contenido;
-        
-        // Pasamos contenido completo (escapado) al editar
-        // Usamos encodeURIComponent para evitar errores con comillas en el texto
-        const contenidoSafe = encodeURIComponent(item.contenido);
-
-        tbody.innerHTML += `
-            <tr>
-                <td>${item.orden}</td>
-                <td class="fw-bold">${item.titulo}</td>
-                <td>${contenidoCorto}</td>
-                <td class="text-end">
-                    <span class="material-symbols-outlined btn-action btn-edit" 
-                          onclick="abrirModalEditar('acordeon', '${item.id}', '${item.titulo}', '${contenidoSafe}', '${item.orden}', null)">
-                          edit
-                    </span>
-                    <span class="material-symbols-outlined btn-action btn-delete" 
-                          onclick="eliminarItem('acordeon', ${item.id})">
-                          delete
-                    </span>
-                </td>
-            </tr>
-        `;
-    });
+function renderFilaUsuario(i) {
+    return `<tr>
+        <td>${new Date(i.fecha_registro).toLocaleDateString()}</td>
+        <td>${i.nombre_usuario}</td>
+        <td>${i.correo_electronico}</td>
+        <td>${btnAcciones(i.id_usuarios, 'users', JSON.stringify(i).replace(/"/g, '&quot;'))}</td>
+    </tr>`;
 }
 
-// Función para abrir el modal y rellenarlo
-window.abrirModalEditar = function(type, id, titulo, contenido, orden, icono) {
-    document.getElementById('editId').value = id;
+function btnAcciones(id, type, dataObj) {
+    // Aquí pasamos el objeto entero en data-obj para facilitar el rellenado del modal
+    return `
+        <button class="btn btn-sm btn-warning" onclick='abrirModal("${type}", ${dataObj})'>Editar</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminar('${type}', '${id}')">Borrar</button>
+    `;
+}
+
+// --- LÓGICA DE EDICIÓN ---
+function abrirModal(type, item) {
+    // Rellenar campos ocultos
     document.getElementById('editType').value = type;
-    document.getElementById('editTitulo').value = titulo;
-    document.getElementById('editOrden').value = orden;
-    
-    // Decodificar contenido si viene de acordeón
-    if (type === 'acordeon') {
-        document.getElementById('editContenido').value = decodeURIComponent(contenido);
-        document.getElementById('divEditIcono').classList.add('d-none'); // Ocultar input icono
-    } else {
-        document.getElementById('editContenido').value = contenido;
-        document.getElementById('editIcono').value = icono;
-        document.getElementById('divEditIcono').classList.remove('d-none'); // Mostrar input icono
+    // Detectar ID correctamente
+    const id = item.id || item.id_usuarios; 
+    document.getElementById('editId').value = id;
+
+    // Referencias a inputs del modal
+    const f1 = document.getElementById('editField1'); // Título / Nombre
+    const f2 = document.getElementById('editField2'); // Desc / Email
+    const f3 = document.getElementById('editField3'); // Orden
+    const f4 = document.getElementById('editField4'); // Icono
+
+    // Limpiar / Mostrar según tipo
+    if (type === 'tarjetas') {
+        f1.value = item.titulo;
+        f2.value = item.descripcion;
+        f3.parentElement.style.display = 'block'; f3.value = item.orden;
+        f4.parentElement.style.display = 'block'; f4.value = item.icono;
+    } else if (type === 'acordeon') {
+        f1.value = item.titulo;
+        f2.value = item.contenido;
+        f3.parentElement.style.display = 'block'; f3.value = item.orden;
+        f4.parentElement.style.display = 'none';
+    } else if (type === 'users') {
+        f1.value = item.nombre_usuario;
+        f2.value = item.correo_electronico;
+        f3.parentElement.style.display = 'none';
+        f4.parentElement.style.display = 'none';
     }
 
-    const modal = new bootstrap.Modal(document.getElementById('modalEditar'));
-    modal.show();
-};
+    new bootstrap.Modal(document.getElementById('modalEdicion')).show();
+}
+
+async function guardarEdicion() {
+    const type = document.getElementById('editType').value;
+    const id = document.getElementById('editId').value;
+    
+    let body = {};
+    if (type === 'tarjetas') {
+        body = {
+            titulo: document.getElementById('editField1').value,
+            descripcion: document.getElementById('editField2').value,
+            orden: document.getElementById('editField3').value,
+            icono: document.getElementById('editField4').value
+        };
+    } else if (type === 'acordeon') {
+        body = {
+            titulo: document.getElementById('editField1').value,
+            contenido: document.getElementById('editField2').value,
+            orden: document.getElementById('editField3').value
+        };
+    } else if (type === 'users') {
+        body = {
+            nombre_usuario: document.getElementById('editField1').value,
+            correo_electronico: document.getElementById('editField2').value
+        };
+    }
+
+    await peticion(`${API_URL}/${type}/${id}`, 'PUT', body);
+    // Cerrar modal y recargar
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEdicion'));
+    modal.hide();
+    cargarTodo();
+}
+
+// --- ELIMINAR Y CREAR ---
+
+async function eliminar(type, id) {
+    if(!confirm('¿Seguro?')) return;
+    await peticion(`${API_URL}/${type}/${id}`, 'DELETE');
+    cargarTodo();
+}
+
+function configurarForm(formId, type) {
+    document.getElementById(formId).addEventListener('submit', async (e) => {
+        e.preventDefault();
+        let body = {};
+        
+        if(type === 'tarjetas') {
+            body = {
+                orden: document.getElementById('tOrden').value,
+                icono: document.getElementById('tIcono').value,
+                titulo: document.getElementById('tTitulo').value,
+                descripcion: document.getElementById('tDesc').value
+            };
+        } else if(type === 'acordeon') {
+            body = {
+                orden: document.getElementById('aOrden').value,
+                titulo: document.getElementById('aTitulo').value,
+                contenido: document.getElementById('aContenido').value
+            };
+        } else if(type === 'users') {
+            body = {
+                nombre_usuario: document.getElementById('uUser').value,
+                correo_electronico: document.getElementById('uEmail').value,
+                contrasena: document.getElementById('uPass').value
+            };
+        }
+
+        await peticion(`${API_URL}/${type}`, 'POST', body);
+        e.target.reset();
+        cargarTodo();
+    });
+}
+
+// --- HELPER FETCH ---
+async function peticion(url, method, data) {
+    const options = {
+        method: method,
+        headers: { 'Content-Type': 'application/json' }
+    };
+    if (data) options.body = JSON.stringify(data);
+    
+    const res = await fetch(url, options);
+    if (!res.ok) alert('Error en la operación');
+    return res.json();
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
