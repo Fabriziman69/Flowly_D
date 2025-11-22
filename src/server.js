@@ -15,7 +15,7 @@ const authRoutes = require('./routes/authRoutes');
 const ciclosRoutes = require('./routes/ciclosRoutes');
 const registroSintomasRoutes = require('./routes/registroSintomasRoutes');
 const infoRoutes = require('./routes/infoRoutes'); 
-const adminRoutes = require('./routes/adminRoutes'); // ✅ La nueva ruta unificada
+const adminRoutes = require('./routes/adminRoutes'); //La nueva ruta unificada
 
 // ─────────────────────────────────────────────────────────────
 // 3. MIDDLEWARES
