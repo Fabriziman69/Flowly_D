@@ -135,8 +135,10 @@ router.post('/forgot-password', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'El correo es obligatorio' });
 
     // Enviamos el correo con la URL de redirección a tu sitio local
+    const siteUrl = process.env.SITE_URL || 'http://localhost:3000/';
+
     const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:3000/', // IMPORTANTE: Ajustar si subes a producción
+      redirectTo: siteUrl, // IMPORTANTE: Ajustar si subes a producción
     });
 
     if (error) return res.status(400).json({ error: error.message });
