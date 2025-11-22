@@ -124,4 +124,67 @@ router.post('/logout', async (_req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────
+// RECUPERACIÓN DE CONTRASEÑA
+// ─────────────────────────────────────────────────────────────
+
+// 1. Solicitar correo de recuperación
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'El correo es obligatorio' });
+
+    // Enviamos el correo con la URL de redirección a tu sitio local
+    const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
+      redirectTo: 'http://localhost:3000/', // IMPORTANTE: Ajustar si subes a producción
+    });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ success: true, message: 'Correo de recuperación enviado.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// 2. Actualizar la contraseña (requiere token de acceso)
+router.post('/update-password', async (req, res) => {
+  try {
+    const { new_password, access_token, refresh_token } = req.body;
+
+    if (!new_password || !access_token) {
+      return res.status(400).json({ error: 'Datos incompletos' });
+    }
+
+    // Establecemos la sesión con el token que llegó del correo
+    const { error: sessionError } = await supabaseAuth.auth.setSession({
+      access_token,
+      refresh_token
+    });
+
+    if (sessionError) return res.status(401).json({ error: 'Sesión de recuperación inválida' });
+
+    // Actualizamos la contraseña del usuario autenticado
+    const { error: updateError } = await supabaseAuth.auth.updateUser({
+      password: new_password
+    });
+
+    if (updateError) return res.status(400).json({ error: updateError.message });
+
+    // También actualizamos el hash en la tabla de usuarios (para mantener sincronía)
+    try {
+      const user = (await supabaseAuth.auth.getUser()).data.user;
+      if (user) {
+        const admin = supabaseAdmin();
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+        await admin.from('usuarios').update({ contrasena: hashedPassword }).eq('id_usuarios', user.id);
+      }
+    } catch (e) { /* Ignorar error secundario */ }
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar contraseña' });
+  }
+});
+
 module.exports = router;
