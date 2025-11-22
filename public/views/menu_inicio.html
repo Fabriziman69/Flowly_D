@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Calendario Menstrual</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style_menu.css">
+    <link rel="icon" href="../IMG/icon.ico" type="image/x-icon">
 </head>
 <body>
     <header>
@@ -70,7 +72,6 @@
     </header>
 
     <main class="container pt-4 pb-5">
-        
         <div id="seccion-calendario" class="contenido-seccion fade-in">
             <h2 class="title mb-4 text-center">Calendario Menstrual</h2>
             <div id='calendar' class="shadow-sm rounded bg-white p-2"></div>
@@ -119,20 +120,16 @@
 
         <div id="seccion-informativa" class="contenido-seccion d-none fade-in">
             <h2 class="title mb-4">Salud Menstrual</h2>
-
             <div id="consejo-diario" class="alert alert-pink text-center fs-6 fw-semibold shadow-sm border-0 mb-4">
                 Cargando consejo...
             </div>
-
             <div id="contenedor-tarjetas-info" class="row mb-4">
                 <div class="col-12 text-center text-muted">
                     <div class="spinner-border text-primary" role="status"></div>
                     <p>Cargando información...</p>
                 </div>
             </div>
-
-            <div class="accordion shadow-sm rounded overflow-hidden" id="acordeonFases">
-                </div>
+            <div class="accordion shadow-sm rounded overflow-hidden" id="acordeonFases"></div>
         </div>
     </main>
 
@@ -171,15 +168,10 @@
                 </div>
                 <div class="modal-body text-center p-4">
                     <span class="material-symbols-outlined text-primary mb-3" style="font-size: 40px;">event_repeat</span>
-                    
                     <h4 class="fw-bold text-dark mb-2">Ciclo Activo</h4>
                     <p class="text-muted mb-4">Actualmente estamos siguiendo tu ciclo anterior.</p>
-
                     <hr class="my-4">
-
                     <h6 class="fw-bold text-secondary mb-3">¿Comenzó tu periodo nuevamente?</h6>
-                    <p class="small text-muted mb-3">Registra el inicio para recalcular tus fechas.</p>
-                    
                     <button type="button" class="btn btn-primary w-100 rounded-pill py-2" id="btnIniciarNuevoCiclo">
                         <span class="material-symbols-outlined align-middle me-2" style="font-size: 18px;">water_drop</span>
                         Registrar Nuevo Periodo
@@ -202,30 +194,23 @@
                             <label for="fechaSintoma" class="form-label fw-bold text-secondary">Fecha:</label>
                             <input type="date" class="form-control bg-light" id="fechaSintoma" required>
                         </div>
-
                         <div class="mb-3">
                             <label for="selectSintoma" class="form-label fw-bold text-secondary">¿Qué sientes hoy?</label>
                             <select class="form-select" id="selectSintoma">
                                 <option value="" selected disabled>Cargando síntomas...</option>
                             </select>
                         </div>
-
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="checkOtroSintoma">
                             <label class="form-check-label text-muted small" for="checkOtroSintoma">No encuentro mi síntoma</label>
                         </div>
-
                         <div class="mb-4 d-none" id="divNuevoSintoma">
                             <input type="text" class="form-control border-primary" id="inputNuevoSintoma" placeholder="Escribe aquí (ej: Mareos)">
                         </div>
-
                         <div class="mb-2">
                             <label class="form-label fw-bold text-secondary">Intensidad</label>
                             <input type="range" class="form-range" min="1" max="5" id="intensidadSintoma" value="2">
-                            <div class="d-flex justify-content-between small text-muted">
-                                <span>Leve</span>
-                                <span>Fuerte</span>
-                            </div>
+                            <div class="d-flex justify-content-between small text-muted"><span>Leve</span><span>Fuerte</span></div>
                         </div>
                     </form>
                 </div>

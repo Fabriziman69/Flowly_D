@@ -4,14 +4,14 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarAuthManager();
 });
 
-// Gestiona la apertura y cierre de modales
+// --- INTERFAZ Y MODALES ---
 function inicializarAnimaciones() {
     const showFormBtn = document.querySelector('.show-form-btn');
     const formOverlay = document.querySelector('.form-overlay');
     const closeBtn = document.querySelector('.close-btn');
     const switchFormLinks = document.querySelectorAll('.switch-form-link');
 
-    // Abrir modal de inicio
+    // Abrir modal
     if (showFormBtn && formOverlay) {
         showFormBtn.addEventListener('click', function () {
             formOverlay.classList.add('active');
@@ -26,7 +26,7 @@ function inicializarAnimaciones() {
         });
     }
 
-    // Cambiar entre Login y Registro
+    // Cambiar entre login y registro
     switchFormLinks.forEach(link => {
         link.addEventListener('click', function (e) {
             e.preventDefault();
@@ -35,7 +35,7 @@ function inicializarAnimaciones() {
         });
     });
 
-    // Cerrar al hacer clic fuera del contenido
+    // Cerrar al hacer clic fuera
     if (formOverlay) {
         formOverlay.addEventListener('click', function (e) {
             if (e.target === formOverlay) {
@@ -43,8 +43,8 @@ function inicializarAnimaciones() {
             }
         });
     }
-    
-    // Activador del panel de administración
+
+    // Lógica del panel de administrador (Trigger secreto "O")
     const adminTrigger = document.getElementById('secret-admin-trigger');
     if(adminTrigger) {
         adminTrigger.addEventListener('click', () => {
@@ -52,7 +52,6 @@ function inicializarAnimaciones() {
         });
     }
     
-    // Cerrar modal de administración
     const closeAdmin = document.querySelector('.admin-close-btn');
     if(closeAdmin) {
         closeAdmin.addEventListener('click', () => {
@@ -60,7 +59,6 @@ function inicializarAnimaciones() {
         });
     }
     
-    // Autenticación de administrador
     const adminForm = document.getElementById('admin-login-form');
     if(adminForm) {
         adminForm.addEventListener('submit', (e) => {
@@ -68,7 +66,6 @@ function inicializarAnimaciones() {
             const u = document.getElementById('admin-username').value;
             const p = document.getElementById('admin-password').value;
             
-            // Credenciales de acceso
             if(u === "adminflowly" && p === "secreto123") {
                 localStorage.setItem('flowly_is_admin', 'true');
                 window.location.href = '/admin-panel.html';
@@ -79,7 +76,6 @@ function inicializarAnimaciones() {
     }
 }
 
-// Alterna la visibilidad de los formularios
 function mostrarFormulario(tipo) {
     const loginPage = document.getElementById('login-page');
     const registerPage = document.getElementById('register-page');
@@ -95,7 +91,6 @@ function mostrarFormulario(tipo) {
     }
 }
 
-// Configura la visualización de contraseñas
 function inicializarFormularios() {
     const toggleButtons = document.querySelectorAll('.toggle-password');
     toggleButtons.forEach(button => {
@@ -119,7 +114,6 @@ function inicializarFormularios() {
     });
 }
 
-// Configura los eventos de envío (submit)
 function inicializarAuthManager() {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
@@ -128,13 +122,13 @@ function inicializarAuthManager() {
     if (registerForm) registerForm.addEventListener('submit', handleRegister);
 }
 
-// Proceso de inicio de sesión
+// --- LÓGICA DE LOGIN (LIMPIA) ---
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email')?.value?.trim();
     const password = document.getElementById('login-password')?.value;
 
-    if (!email || !password) return alert('Por favor, completa todos los campos');
+    if (!email || !password) return alert('Por favor completa todos los campos');
 
     try {
         const response = await fetch('/auth/login', {
@@ -149,25 +143,28 @@ async function handleLogin(e) {
             return alert(resp.error || 'Credenciales inválidas');
         }
 
-        // Almacenamiento de sesión
+        // Guardar datos de sesión
         if (resp.user) {
             localStorage.setItem('user_id', resp.user.id);
             localStorage.setItem('user_email', resp.user.email || email);
             localStorage.setItem('user_name', resp.user.username || 'Usuario');
         }
 
-        if (resp.access_token) localStorage.setItem('supabase_token', resp.access_token);
-        else if (resp.session && resp.session.access_token) localStorage.setItem('supabase_token', resp.session.access_token);
-        
-        // Redirección
-        window.location.href = '/menu';
+        // Obtener y guardar token
+        let token = resp.access_token || (resp.session && resp.session.access_token);
+        if (token) {
+            localStorage.setItem('supabase_token', token);
+            window.location.href = '/menu'; // Redirección directa
+        } else {
+            alert('Error: No se recibió el token de sesión.');
+        }
 
     } catch (error) {
         alert('Error de conexión con el servidor');
     }
 }
 
-// Proceso de registro de usuario
+// --- LÓGICA DE REGISTRO ---
 async function handleRegister(e) {
     e.preventDefault();
     const username = document.getElementById('register-username')?.value?.trim();
@@ -190,7 +187,6 @@ async function handleRegister(e) {
         if (!response.ok || !result.success) return alert(result.error || 'Error al crear cuenta');
 
         alert('Cuenta creada exitosamente. Por favor inicia sesión.');
-        
         mostrarFormulario('login');
         document.getElementById('register-form')?.reset();
 
