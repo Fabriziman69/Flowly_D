@@ -17,14 +17,59 @@ router.get('/users', async (req, res) => {
 });
 
 // POST Usuario (Crear)
+// POST Usuario (Crear) - VERSIÓN DEBUG
 router.post('/users', async (req, res) => {
+    console.log("📢 1. Solicitud recibida para crear usuario:", req.body.correo_electronico);
+    
     const { nombre_usuario, correo_electronico, contrasena } = req.body;
-    const hashedPassword = await bcrypt.hash(contrasena, 10);
-    const { error } = await supabase.from('usuarios').insert([{ 
-        nombre_usuario, correo_electronico, contrasena: hashedPassword, fecha_registro: new Date() 
-    }]);
-    if (error) return res.status(400).json({ error: error.message });
-    res.json({ success: true });
+    
+    // Validación básica
+    if (!contrasena || contrasena.length < 6) {
+        console.log("❌ 2. Error: Contraseña muy corta");
+        return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
+    }
+
+    try {
+        // 1. Crear en Auth
+        console.log("⏳ 3. Intentando crear en Supabase Auth...");
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email: correo_electronico,
+            password: contrasena,
+            email_confirm: true
+        });
+
+        if (authError) {
+            console.error("❌ 4. ERROR SUPABASE AUTH:", authError); // ¡AQUÍ SALDRÁ EL ERROR REAL!
+            return res.status(400).json({ error: "Auth Error: " + authError.message });
+        }
+
+        console.log("✅ 5. Usuario creado en Auth ID:", authData.user.id);
+
+        // 2. Crear en tabla usuarios
+        console.log("⏳ 6. Insertando en tabla pública...");
+        const hashedPassword = await bcrypt.hash(contrasena, 10);
+        const { error: dbError } = await supabase.from('usuarios').insert([{ 
+            id_usuarios: authData.user.id,
+            nombre_usuario, 
+            correo_electronico, 
+            contrasena: hashedPassword, 
+            fecha_registro: new Date() 
+        }]);
+
+        if (dbError) {
+            console.error("❌ 7. ERROR TABLA PÚBLICA:", dbError);
+            // Si falla aquí, intentamos borrar el de Auth para no dejar basura
+            await supabase.auth.admin.deleteUser(authData.user.id);
+            return res.status(400).json({ error: "DB Error: " + dbError.message });
+        }
+
+        console.log("🎉 8. Éxito total");
+        res.json({ success: true });
+
+    } catch (e) {
+        console.error("🔥 9. EXCEPCIÓN NO CONTROLADA:", e);
+        res.status(500).json({ error: "Error interno: " + e.message });
+    }
 });
 
 // PUT Usuario (Editar) - OJO: Usa id_usuarios
