@@ -124,9 +124,9 @@ router.post('/logout', async (_req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────
+
 // RECUPERACIÓN DE CONTRASEÑA
-// ─────────────────────────────────────────────────────────────
+
 
 // 1. Solicitar correo de recuperación
 router.post('/forgot-password', async (req, res) => {
@@ -158,7 +158,7 @@ router.post('/update-password', async (req, res) => {
       return res.status(400).json({ error: 'Datos incompletos' });
     }
 
-    // Establecemos la sesión con el token que llegó del correo
+    
     const { error: sessionError } = await supabaseAuth.auth.setSession({
       access_token,
       refresh_token
@@ -166,14 +166,14 @@ router.post('/update-password', async (req, res) => {
 
     if (sessionError) return res.status(401).json({ error: 'Sesión de recuperación inválida' });
 
-    // Actualizamos la contraseña del usuario autenticado
+    
     const { error: updateError } = await supabaseAuth.auth.updateUser({
       password: new_password
     });
 
     if (updateError) return res.status(400).json({ error: updateError.message });
 
-    // También actualizamos el hash en la tabla de usuarios (para mantener sincronía)
+    
     try {
       const user = (await supabaseAuth.auth.getUser()).data.user;
       if (user) {

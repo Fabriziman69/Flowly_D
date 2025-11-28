@@ -5,7 +5,6 @@ const { supabase, supabaseAdmin } = require('../config/supabase');
 // Obtener el catálogo de síntomas disponibles
 router.get('/lista-sintomas', async (req, res) => {
   try {
-    // Usamos el cliente admin para evitar restricciones de lectura si las hubiera
     const admin = supabaseAdmin(); 
     
     const { data, error } = await admin
@@ -16,15 +15,13 @@ router.get('/lista-sintomas', async (req, res) => {
     
     res.json(data);
   } catch (err) {
-    console.error("Error obteniendo lista de síntomas:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Registrar un nuevo síntoma (o crear uno personalizado si no existe)
+// Registrar un nuevo síntoma (o crear uno personalizado)
 router.post('/', async (req, res) => {
   try {
-    // 1. Validación de sesión
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
     
@@ -33,7 +30,6 @@ router.post('/', async (req, res) => {
     
     if (authError || !user) return res.status(401).json({ error: 'Sesión inválida' });
 
-    // 2. Recepción de datos
     let { fk_sintomas, nuevo_sintoma, fecha, intensidad, fk_ciclo } = req.body;
 
     if (!fecha || !intensidad) {
@@ -42,9 +38,8 @@ router.post('/', async (req, res) => {
 
     const admin = supabaseAdmin();
 
-    // 3. Lógica para síntoma personalizado
+    // Crear síntoma personalizado si es necesario
     if (nuevo_sintoma) {
-        // Insertar el nuevo síntoma en el catálogo
         const { data: nuevoItem, error: errorCreacion } = await admin
             .from('sintomas')
             .insert([{ 
@@ -55,14 +50,13 @@ router.post('/', async (req, res) => {
             .single();
 
         if (errorCreacion) {
-            throw new Error("Error creando el nuevo síntoma: " + errorCreacion.message);
+            throw new Error(errorCreacion.message);
         }
         
-        // Asignar el ID del síntoma recién creado
         fk_sintomas = nuevoItem.id_sintomas;
     }
 
-    // 4. Guardar el registro del usuario
+    // Guardar registro del usuario
     const { data, error } = await admin
       .from('registro_sintoma')
       .insert([{
@@ -78,15 +72,13 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Síntoma registrado correctamente', data });
   } catch (err) {
-    console.error("Error registrando síntoma:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Obtener síntomas registrados en una fecha específica
+// Obtener síntomas por fecha
 router.get('/fecha/:fecha', async (req, res) => {
   try {
-    // Validación de sesión
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
     
@@ -98,7 +90,6 @@ router.get('/fecha/:fecha', async (req, res) => {
     const { fecha } = req.params;
     const admin = supabaseAdmin();
 
-    // Consulta filtrada por usuario y fecha
     const { data, error } = await admin
       .from('registro_sintoma')
       .select(`id_registro_sintoma, intensidad, fk_sintomas ( nombre_sintoma, categoria )`)
@@ -112,10 +103,9 @@ router.get('/fecha/:fecha', async (req, res) => {
   }
 });
 
-// Obtener historial completo de síntomas del usuario
+// Obtener historial completo
 router.get('/mis-registros', async (req, res) => {
   try {
-    // Validación de sesión
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
     
@@ -124,7 +114,6 @@ router.get('/mis-registros', async (req, res) => {
 
     if (authError || !user) return res.status(401).json({ error: 'Sesión inválida' });
 
-    // Consulta de historial
     const admin = supabaseAdmin();
     const { data, error } = await admin
       .from('registro_sintoma')
@@ -140,7 +129,6 @@ router.get('/mis-registros', async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error("Error obteniendo historial:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

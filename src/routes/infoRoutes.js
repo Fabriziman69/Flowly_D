@@ -51,7 +51,7 @@ router.get('/acordeon', async (req, res) => {
 });
 
 
-// --- Rutas Administrativas (Escritura, Edición, Eliminación) ---
+
 
 // 1. TARJETAS
 
@@ -70,7 +70,7 @@ router.post('/admin/tarjetas', async (req, res) => {
     }
 });
 
-// Actualizar (NUEVO)
+// Actualizar 
 router.put('/admin/tarjetas/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -121,7 +121,7 @@ router.post('/admin/acordeon', async (req, res) => {
     }
 });
 
-// Actualizar (NUEVO)
+// Actualizar
 router.put('/admin/acordeon/:id', async (req, res) => {
     try {
         const { id } = req.params;

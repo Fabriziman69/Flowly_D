@@ -1,4 +1,3 @@
-// Archivo: routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
@@ -17,7 +16,7 @@ router.get('/users', async (req, res) => {
 });
 
 // POST Usuario (Crear)
-// POST Usuario (Crear) - VERSIÓN DEBUG
+
 router.post('/users', async (req, res) => {
     console.log("📢 1. Solicitud recibida para crear usuario:", req.body.correo_electronico);
     
@@ -25,7 +24,7 @@ router.post('/users', async (req, res) => {
     
     // Validación básica
     if (!contrasena || contrasena.length < 6) {
-        console.log("❌ 2. Error: Contraseña muy corta");
+        console.log(" 2. Error: Contraseña muy corta");
         return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
     }
 
@@ -39,7 +38,7 @@ router.post('/users', async (req, res) => {
         });
 
         if (authError) {
-            console.error("❌ 4. ERROR SUPABASE AUTH:", authError); // ¡AQUÍ SALDRÁ EL ERROR REAL!
+            console.error(" 4. ERROR SUPABASE AUTH:", authError); 
             return res.status(400).json({ error: "Auth Error: " + authError.message });
         }
 
@@ -57,17 +56,17 @@ router.post('/users', async (req, res) => {
         }]);
 
         if (dbError) {
-            console.error("❌ 7. ERROR TABLA PÚBLICA:", dbError);
-            // Si falla aquí, intentamos borrar el de Auth para no dejar basura
+            console.error(" 7. ERROR TABLA PÚBLICA:", dbError);
+           
             await supabase.auth.admin.deleteUser(authData.user.id);
             return res.status(400).json({ error: "DB Error: " + dbError.message });
         }
 
-        console.log("🎉 8. Éxito total");
+        console.log(" 8. Éxito total");
         res.json({ success: true });
 
     } catch (e) {
-        console.error("🔥 9. EXCEPCIÓN NO CONTROLADA:", e);
+        console.error(" 9. EXCEPCIÓN NO CONTROLADA:", e);
         res.status(500).json({ error: "Error interno: " + e.message });
     }
 });

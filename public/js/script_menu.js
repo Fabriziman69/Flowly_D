@@ -1,4 +1,4 @@
-// ====== VARIABLES GLOBALES ======
+// Variables globales
 let datosUsuario = {
     cicloConfigurado: false,
     ultimoPeriodo: null,
@@ -8,25 +8,13 @@ let datosUsuario = {
 let calendar;
 let listaSintomasCache = [];
 
-// ====== SEGURIDAD Y SESIÓN ======
-
-// Esta función se ejecuta al inicio para proteger la página
-function verificarSesion() {
-    const token = localStorage.getItem('supabase_token');
-    if (!token) {
-        // Usamos 'replace' para que esta visita no se guarde en el historial
-        // Esto evita que el botón "Atrás" funcione para volver aquí
-        window.location.replace('/'); 
-        return false;
-    }
-    return true;
-}
+// --- GESTIÓN DE SESIÓN Y API ---
 
 function getUserTokenOrThrow() {
     const token = localStorage.getItem('supabase_token');
     if (!token) {
-        window.location.replace('/');
-        throw new Error('Sesión expirada');
+        window.location.href = '/';
+        throw new Error('Token no encontrado');
     }
     return token;
 }
@@ -34,26 +22,43 @@ function getUserTokenOrThrow() {
 function getUserIdOrThrow() {
     const uid = localStorage.getItem('user_id');
     if (!uid) {
-        window.location.replace('/');
-        throw new Error('Usuario no identificado');
+        window.location.href = '/';
+        throw new Error('ID de usuario no encontrado');
     }
     return uid;
 }
 
-// ====== INICIALIZACIÓN ======
+async function apiFetch(url, options = {}) {
+    const token = getUserTokenOrThrow();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        'Authorization': `Bearer ${token}`,
+    };
+    
+    const res = await fetch(url, { ...options, headers });
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+
+    if (!res.ok) {
+        throw new Error((data && (data.error || data.message)) || `Error HTTP ${res.status}`);
+    }
+    return data;
+}
+
+// --- INICIALIZACIÓN ---
+
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Verificar seguridad antes de cargar nada
     if (!verificarSesion()) return;
 
-    // 2. Iniciar App
     inicializarAplicacion();
     mostrarConsejoDelDia();
 
-    // 3. Configurar Logout (Cierre de sesión seguro)
+    // Configuración de Logout
     const logoutFn = (e) => {
         e.preventDefault();
-        localStorage.clear(); // Borra credenciales
-        window.location.replace('/'); // Redirige y borra historial
+        localStorage.clear();
+        window.location.href = '/';
     };
     
     const btn1 = document.getElementById('btnLogout');
@@ -62,22 +67,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if(btn2) btn2.addEventListener('click', logoutFn);
 });
 
-// ====== API HELPERS ======
-async function apiFetch(url, options = {}) {
-    const token = getUserTokenOrThrow();
-    const headers = {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-        'Authorization': `Bearer ${token}`,
-    };
-    const res = await fetch(url, { ...options, headers });
-    let data = null;
-    try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
-    return data;
+function verificarSesion() {
+    const token = localStorage.getItem('supabase_token');
+    if (!token) {
+        window.location.href = '/';
+        return false;
+    }
+    return true;
 }
 
-// ====== CARGA DE DATOS ======
 async function inicializarAplicacion() {
     cargarDatosPerfil();
     inicializarCalendario();
@@ -86,29 +84,26 @@ async function inicializarAplicacion() {
     configurarEventosBotones();
 
     try {
-        // Cargas paralelas para mayor velocidad
         await Promise.all([
             cargarCatalogoSintomas(),
             cargarCiclosDesdeBackend(),
             cargarInfoDinamica()
         ]);
-    } catch (e) { 
-        // Errores silenciosos en carga inicial para no bloquear la UI
-    }
+    } catch (e) { }
 }
 
 function cargarDatosPerfil() {
     const email = localStorage.getItem('user_email') || 'Usuario';
-    const uEl = document.getElementById('perfil-username');
-    const eEl = document.getElementById('perfil-email');
-    const navEl = document.getElementById('nav-username');
-    
-    if(eEl) eEl.textContent = email;
-    if(uEl) uEl.textContent = 'Bienvenida';
-    if(navEl) navEl.textContent = 'Cuenta';
+    const els = ['perfil-email', 'perfil-username', 'nav-username'];
+    const vals = [email, 'Bienvenida', 'Cuenta'];
+    els.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = vals[i];
+    });
 }
 
-// ====== LÓGICA DE CICLOS ======
+// --- LÓGICA DE CICLOS ---
+
 async function cargarCiclosDesdeBackend() {
     try {
         const res = await apiFetch('/api/ciclos');
@@ -125,7 +120,7 @@ async function cargarCiclosDesdeBackend() {
         } else {
             datosUsuario.cicloConfigurado = false;
             const modalEl = document.getElementById('modalRegistroInicial');
-            if(modalEl) new bootstrap.Modal(modalEl).show();
+            if (modalEl) new bootstrap.Modal(modalEl).show();
         }
     } catch (error) { }
 }
@@ -135,37 +130,42 @@ async function guardarCicloInicial() {
     const duracion = parseInt(document.getElementById('duracionCiclo').value);
     const btn = document.getElementById('btnGuardarRegistroInicial');
 
-    if (!fecha || !duracion) return alert("Completa los datos requeridos.");
+    if (!fecha || !duracion) return alert("Por favor completa los datos.");
 
     try {
-        btn.textContent = "Guardando..."; btn.disabled = true;
-        
+        btn.textContent = "Guardando...";
+        btn.disabled = true;
+
         await apiFetch('/api/ciclos', {
             method: 'POST',
-            body: JSON.stringify({ fecha_inicio: fecha, duracion_ciclo: duracion, duracion_sangrado: 5 })
+            body: JSON.stringify({
+                fecha_inicio: fecha,
+                duracion_ciclo: duracion,
+                duracion_sangrado: 5
+            })
         });
         
         datosUsuario.cicloConfigurado = true;
         datosUsuario.ultimoPeriodo = fecha;
         datosUsuario.duracionCiclo = duracion;
         
-        alert("Ciclo configurado correctamente.");
+        const modalEl = document.getElementById('modalRegistroInicial');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
         
-        bootstrap.Modal.getInstance(document.getElementById('modalRegistroInicial')).hide();
         calendar.refetchEvents();
         actualizarEstadisticas();
-        
-        const regBtn = document.getElementById('registro-texto');
-        if(regBtn) regBtn.textContent = "Registrar";
 
-    } catch (e) { 
-        alert('Error: ' + e.message); 
-    } finally { 
-        btn.textContent = "Guardar"; btn.disabled = false; 
+    } catch (e) {
+        alert('Error: ' + e.message);
+    } finally {
+        btn.textContent = "Guardar Ciclo";
+        btn.disabled = false;
     }
 }
 
-// ====== CALENDARIO ======
+// --- CALENDARIO ---
+
 function inicializarCalendario() {
     const el = document.getElementById('calendar');
     if (!el) return;
@@ -174,14 +174,22 @@ function inicializarCalendario() {
         initialView: 'dayGridMonth',
         locale: 'es',
         firstDay: 1,
-        headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth' },
+        headerToolbar: {
+            left: 'prev,next',
+            center: 'title',
+            right: 'dayGridMonth'
+        },
         height: 'auto', 
         events: async function(info, cb, fail) {
             try {
                 let evs = [];
+                
+                // Predicciones
                 if (datosUsuario.cicloConfigurado && datosUsuario.ultimoPeriodo) {
                     evs = evs.concat(generarPrediccionesMatematicas());
                 }
+                
+                // Historial
                 const dbRegs = await apiFetch('/api/registro-sintomas/mis-registros');
                 if (dbRegs && Array.isArray(dbRegs)) {
                     evs = evs.concat(dbRegs.map(reg => ({
@@ -192,9 +200,13 @@ function inicializarCalendario() {
                     })));
                 }
                 cb(evs);
-            } catch (e) { fail(e); }
+            } catch (e) {
+                fail(e);
+            }
         },
-        dateClick: function (info) { abrirModalSintoma(info.dateStr); }
+        dateClick: function (info) {
+            abrirModalSintoma(info.dateStr);
+        }
     });
     calendar.render();
 }
@@ -205,21 +217,32 @@ function generarPrediccionesMatematicas() {
     const dur = datosUsuario.duracionCiclo;
 
     for (let i = 0; i < 6; i++) {
-        const ini = new Date(ult); ini.setDate(ini.getDate() + (i * dur));
+        const ini = new Date(ult);
+        ini.setDate(ini.getDate() + (i * dur));
+        
+        // Periodo estimado
         for (let j = 0; j < 5; j++) { 
-            const d = new Date(ini); d.setDate(d.getDate() + j);
+            const d = new Date(ini);
+            d.setDate(d.getDate() + j);
             ev.push({ start: d.toISOString().split('T')[0], display: 'background', color: '#e91e63' });
         }
-        const ovu = new Date(ini); ovu.setDate(ovu.getDate() + 14); 
+        // Ovulación
+        const ovu = new Date(ini);
+        ovu.setDate(ovu.getDate() + 14); 
         ev.push({ title: 'Ovulación', start: ovu.toISOString().split('T')[0], color: '#ff9800' });
-        const f1 = new Date(ini); f1.setDate(f1.getDate() + 10);
-        const f2 = new Date(ini); f2.setDate(f2.getDate() + 15);
+        
+        // Ventana fértil
+        const f1 = new Date(ini);
+        f1.setDate(f1.getDate() + 10);
+        const f2 = new Date(ini);
+        f2.setDate(f2.getDate() + 15);
         ev.push({ start: f1.toISOString().split('T')[0], end: f2.toISOString().split('T')[0], display: 'background', color: '#4caf50', opacity: 0.3 });
     }
     return ev;
 }
 
-// ====== SÍNTOMAS ======
+// --- SÍNTOMAS ---
+
 async function cargarCatalogoSintomas() {
     try {
         const datos = await apiFetch('/api/registro-sintomas/lista-sintomas');
@@ -227,7 +250,9 @@ async function cargarCatalogoSintomas() {
         const sel = document.getElementById('selectSintoma');
         if (sel) {
             sel.innerHTML = '<option value="" selected disabled>Selecciona...</option>';
-            datos.forEach(s => sel.innerHTML += `<option value="${s.id_sintomas}">${s.nombre_sintoma}</option>`);
+            datos.forEach(s => {
+                sel.innerHTML += `<option value="${s.id_sintomas}">${s.nombre_sintoma}</option>`;
+            });
         }
     } catch (e) { }
 }
@@ -237,13 +262,17 @@ function abrirModalSintoma(fecha) {
     const sel = document.getElementById('selectSintoma');
     const chk = document.getElementById('checkOtroSintoma');
     
-    sel.value = ""; sel.disabled = false; chk.checked = false;
+    sel.value = "";
+    sel.disabled = false;
+    chk.checked = false;
     document.getElementById('divNuevoSintoma').classList.add('d-none');
     document.getElementById('inputNuevoSintoma').value = "";
     document.getElementById('intensidadSintoma').value = 2;
 
     new bootstrap.Modal(document.getElementById('modalSintoma')).show();
 }
+
+// En public/js/script_menu.js
 
 async function guardarSintoma() {
     const btn = document.getElementById('btnGuardarSintoma');
@@ -253,37 +282,58 @@ async function guardarSintoma() {
     const inpNew = document.getElementById('inputNuevoSintoma');
     const sel = document.getElementById('selectSintoma');
 
-    let body = { fk_usuario: getUserIdOrThrow(), fecha, intensidad: inten, fk_ciclo: null };
+    let body = {
+        fk_usuario: getUserIdOrThrow(),
+        fecha: fecha,
+        intensidad: inten,
+        fk_ciclo: null
+    };
 
     if (esNuevo) {
         const txt = inpNew.value.trim();
-        if (!txt) return alert("Por favor escribe el síntoma.");
-        body.nuevo_sintoma = txt; body.fk_sintomas = null;
+        if (!txt) return alert("Por favor escribe el nombre del síntoma.");
+        body.nuevo_sintoma = txt;
+        body.fk_sintomas = null;
     } else {
         const id = sel.value;
         if (!id) return alert("Por favor selecciona un síntoma.");
-        body.fk_sintomas = id; body.nuevo_sintoma = null;
+        body.fk_sintomas = id;
+        body.nuevo_sintoma = null;
     }
 
     try {
-        btn.textContent = "Guardando..."; btn.disabled = true;
+        btn.textContent = "Guardando...";
+        btn.disabled = true;
+        
         await apiFetch('/api/registro-sintomas', { method: 'POST', body: JSON.stringify(body) });
         
-        alert('Síntoma registrado correctamente.');
+        // --- LÍNEA ELIMINADA: alert('Síntoma registrado correctamente.'); ---
+        
         if (esNuevo) await cargarCatalogoSintomas();
         
+        // Actualizar calendario visualmente
         const tit = esNuevo ? body.nuevo_sintoma : sel.options[sel.selectedIndex].text;
-        if(calendar) calendar.addEvent({ title: tit, start: fecha, color: '#ff9800', allDay: true });
+        if(calendar) {
+            calendar.addEvent({
+                title: tit,
+                start: fecha,
+                color: '#ff9800',
+                allDay: true
+            });
+        }
         
+        // Cerrar modal automáticamente
         bootstrap.Modal.getInstance(document.getElementById('modalSintoma')).hide();
-    } catch (e) { 
-        alert('Error: ' + e.message); 
-    } finally { 
-        btn.textContent = "Guardar"; btn.disabled = false; 
+
+    } catch (e) {
+        alert('Error: ' + e.message);
+    } finally {
+        btn.textContent = "Guardar";
+        btn.disabled = false;
     }
 }
+// --- INFO DINÁMICA ---
 
-// ====== INFO DINÁMICA ======
 async function cargarInfoDinamica() {
     try {
         const resTarjetas = await fetch('/api/info/tarjetas');
@@ -300,10 +350,12 @@ function renderizarTarjetas(data) {
     const cont = document.getElementById('contenedor-tarjetas-info');
     if(!cont) return;
     cont.innerHTML = '';
+    
     if(data.length === 0) {
         cont.innerHTML = '<p class="text-center text-muted">Sin información disponible.</p>';
         return;
     }
+
     data.forEach(item => {
         cont.innerHTML += `
             <div class="col-md-4 mb-3">
@@ -320,6 +372,7 @@ function renderizarAcordeon(data) {
     const cont = document.getElementById('acordeonFases');
     if(!cont) return;
     cont.innerHTML = '';
+    
     data.forEach((item, idx) => {
         const show = idx === 0 ? 'show' : '';
         const collapsed = idx === 0 ? '' : 'collapsed';
@@ -339,7 +392,8 @@ function renderizarAcordeon(data) {
     });
 }
 
-// ====== EVENTOS UI ======
+// --- EVENTOS UI ---
+
 function configurarEventosBotones() {
     document.getElementById('btnGuardarRegistroInicial')?.addEventListener('click', guardarCicloInicial);
     document.getElementById('btnGuardarSintoma')?.addEventListener('click', guardarSintoma);
@@ -385,15 +439,22 @@ function configurarEventosBotones() {
 }
 
 function configurarNavegacion() {
-    const map = { 'btn_calendario': 'seccion-calendario', 'btn_estadisticas': 'seccion-estadisticas', 'btn_informativa': 'seccion-informativa' };
+    const map = {
+        'btn_calendario': 'seccion-calendario',
+        'btn_estadisticas': 'seccion-estadisticas',
+        'btn_informativa': 'seccion-informativa'
+    };
+
     Object.keys(map).forEach(key => {
         const btn = document.getElementById(key);
         if(!btn) return;
+        
         btn.addEventListener('click', function() {
             Object.keys(map).forEach(k => {
                 document.getElementById(map[k])?.classList.add('d-none');
                 document.getElementById(k)?.classList.remove('active');
             });
+            
             document.getElementById(map[key])?.classList.remove('d-none');
             this.classList.add('active');
             
@@ -416,9 +477,16 @@ function actualizarEstadisticas() {
 }
 
 function mostrarConsejoDelDia() {
-    const consejos = ["Bebe suficiente agua.", "Haz respiraciones profundas.", "El té de jengibre ayuda.", "Prioriza dormir bien.", "Evita cafeína.", "Come rico en hierro."];
+    const consejos = [
+        "Bebe suficiente agua.", 
+        "Haz respiraciones profundas.", 
+        "El té de jengibre ayuda con la inflamación.", 
+        "Prioriza dormir bien.", 
+        "Evita el exceso de cafeína.", 
+        "Consume alimentos ricos en hierro."
+    ];
     const div = document.getElementById("consejo-diario");
-    if(div) div.textContent = "Consejo: " + consejos[Math.floor(Math.random() * consejos.length)];
+    if(div) div.textContent = "🌸 Consejo: " + consejos[Math.floor(Math.random() * consejos.length)];
 }
 
 function crearParticulas() {

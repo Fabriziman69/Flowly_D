@@ -2,10 +2,9 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarAnimaciones();
     inicializarFormularios();
     inicializarAuthManager();
-    verificarModoRecuperacion(); // <--- NUEVO: Detecta si venimos de un link de reset
+    verificarModoRecuperacion();
 });
 
-// --- LÓGICA DE INTERFAZ ---
 function inicializarAnimaciones() {
     const showFormBtn = document.querySelector('.show-form-btn');
     const formOverlay = document.querySelector('.form-overlay');
@@ -22,12 +21,10 @@ function inicializarAnimaciones() {
     if (closeBtn && formOverlay) {
         closeBtn.addEventListener('click', function () {
             formOverlay.classList.remove('active');
-            // Limpiar URL si hay hash de recuperación para evitar bucles
             if(window.location.hash) history.replaceState(null, null, ' ');
         });
     }
 
-    // Manejo de cambio de formularios (Login <-> Registro <-> Olvidé pass)
     switchFormLinks.forEach(link => {
         link.addEventListener('click', function (e) {
             e.preventDefault();
@@ -36,7 +33,6 @@ function inicializarAnimaciones() {
         });
     });
 
-    // Click fuera del modal
     if (formOverlay) {
         formOverlay.addEventListener('click', function (e) {
             if (e.target === formOverlay) {
@@ -46,25 +42,27 @@ function inicializarAnimaciones() {
         });
     }
 
-    // Lógica Admin
     const adminTrigger = document.getElementById('secret-admin-trigger');
     if(adminTrigger) {
         adminTrigger.addEventListener('click', () => {
             document.querySelector('.admin-overlay').classList.add('active');
         });
     }
+    
     const closeAdmin = document.querySelector('.admin-close-btn');
     if(closeAdmin) {
         closeAdmin.addEventListener('click', () => {
             document.querySelector('.admin-overlay').classList.remove('active');
         });
     }
+    
     const adminForm = document.getElementById('admin-login-form');
     if(adminForm) {
         adminForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const u = document.getElementById('admin-username').value;
             const p = document.getElementById('admin-password').value;
+            
             if(u === "adminflowly" && p === "secreto123") {
                 localStorage.setItem('flowly_is_admin', 'true');
                 window.location.href = '/admin-panel.html';
@@ -76,23 +74,19 @@ function inicializarAnimaciones() {
 }
 
 function mostrarFormulario(tipo) {
-    // Ocultar todos
     document.querySelectorAll('.form-page').forEach(page => page.classList.remove('active'));
-    
-    // Mostrar el deseado
     const targetPage = document.getElementById(tipo + '-page');
     if (targetPage) targetPage.classList.add('active');
 }
 
-// --- LÓGICA DE FORMULARIOS ---
 function inicializarFormularios() {
-    // Botones de ojo (ver contraseña)
     const toggleButtons = document.querySelectorAll('.toggle-password');
     toggleButtons.forEach(button => {
         button.addEventListener('click', function () {
             const targetId = this.getAttribute('data-target');
             const input = document.getElementById(targetId);
             const icon = this.querySelector('i');
+            
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.classList.replace('fa-eye', 'fa-eye-slash');
@@ -103,7 +97,6 @@ function inicializarFormularios() {
         });
     });
 
-    // Links de "¿Olvidaste tu contraseña?"
     const forgotLink = document.querySelector('.forgot-password');
     if(forgotLink) {
         forgotLink.addEventListener('click', (e) => {
@@ -125,25 +118,21 @@ function inicializarAuthManager() {
     if (resetForm) resetForm.addEventListener('submit', handleResetPassword);
 }
 
-// --- VERIFICACIÓN DE LINK DE RECUPERACIÓN ---
 function verificarModoRecuperacion() {
-    // Supabase devuelve el token en el hash de la URL (ej: #access_token=...&type=recovery)
     const hash = window.location.hash;
     if (hash && hash.includes('type=recovery')) {
-        // Abrir overlay y mostrar formulario de nueva contraseña
         const formOverlay = document.querySelector('.form-overlay');
         if(formOverlay) formOverlay.classList.add('active');
         mostrarFormulario('reset');
     }
 }
 
-// --- HANDLERS DE API ---
-
-// 1. Login
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
+
+    if (!email || !password) return alert('Por favor completa todos los campos.');
 
     try {
         const res = await fetch('/auth/login', {
@@ -152,7 +141,7 @@ async function handleLogin(e) {
         });
         const data = await res.json();
 
-        if (!data.success) return alert(data.error || 'Error al iniciar sesión');
+        if (!data.success) return alert(data.error || 'Credenciales inválidas');
 
         localStorage.setItem('user_id', data.user.id);
         localStorage.setItem('supabase_token', data.access_token);
@@ -161,7 +150,6 @@ async function handleLogin(e) {
     } catch (error) { alert('Error de conexión'); }
 }
 
-// 2. Registro
 async function handleRegister(e) {
     e.preventDefault();
     const username = document.getElementById('register-username').value.trim();
@@ -169,7 +157,9 @@ async function handleRegister(e) {
     const password = document.getElementById('register-password').value;
     const confirm = document.getElementById('register-confirm').value;
 
+    if (!username || !email || !password || !confirm) return alert('Completa todos los campos');
     if (password !== confirm) return alert('Las contraseñas no coinciden');
+    if (password.length < 6) return alert('La contraseña debe tener al menos 6 caracteres');
 
     try {
         const res = await fetch('/auth/register', {
@@ -180,14 +170,13 @@ async function handleRegister(e) {
 
         if (!data.success) return alert(data.error);
         
-        alert('Cuenta creada. Por favor inicia sesión.');
+        
         mostrarFormulario('login');
-        e.target.reset();
+        document.getElementById('register-form').reset();
 
     } catch (error) { alert('Error de conexión'); }
 }
 
-// 3. Solicitar recuperación (Forgot Password)
 async function handleForgotPassword(e) {
     e.preventDefault();
     const email = document.getElementById('forgot-email').value.trim();
@@ -214,13 +203,11 @@ async function handleForgotPassword(e) {
     }
 }
 
-// 4. Guardar nueva contraseña (Reset Password)
 async function handleResetPassword(e) {
     e.preventDefault();
     const newPass = document.getElementById('new-password').value;
     const btn = e.target.querySelector('button');
 
-    // Extraer tokens del Hash de la URL que mandó Supabase
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
@@ -234,17 +221,15 @@ async function handleResetPassword(e) {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
                 new_password: newPass, 
-                access_token: accessToken,
-                refresh_token: refreshToken
+                access_token: accessToken, 
+                refresh_token: refreshToken 
             })
         });
         const data = await res.json();
 
         if(!res.ok) throw new Error(data.error);
 
-        alert('Contraseña actualizada. Por favor inicia sesión con tu nueva clave.');
-        
-        // Limpiar URL y volver al login
+        alert('Contraseña actualizada. Por favor inicia sesión.');
         history.replaceState(null, null, ' ');
         mostrarFormulario('login');
 

@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
         return res.status(401).json({ error: 'Sesión inválida o expirada' });
     }
 
-    // Insertar ciclo en la base de datos
+    // Insertar ciclo en la base de datos usando privilegios de admin
     const { fecha_inicio, duracion_ciclo, duracion_sangrado } = req.body;
     const admin = supabaseAdmin();
 
